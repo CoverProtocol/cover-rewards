@@ -14,17 +14,17 @@ import "./interfaces/IBonusRewards.sol";
 contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
-  address[] public poolList;
-  uint256 public constant WEEK = 7 days;
+  address[] private poolList;
+  uint256 private constant WEEK = 7 days;
   uint256 private constant CAL_MULTIPLIER = 1e12; // help calculate rewards/bonus PerToken only. 1e12 will allow meaningful $1 deposit in a $1bn pool
   // lpToken => BonusToken
-  mapping(address => Pool) public pools;
+  mapping(address => Pool) public override pools;
+  // lpToken => User address => User data
+  mapping(address => mapping(address => User)) public override users;
   // bonus token => [] allowed authorizers to add bonus tokens
   mapping(address => address[]) private allowedTokenAuthorizers;
   // bonusToken => 1, used to avoid collecting bonus token when not ready
   mapping(address => uint8) private bonusTokenMap;
-  // lpToken => User address => User data
-  mapping(address => mapping(address => User)) public users;
 
   function getPoolList() external view override returns (address[] memory) {
     return poolList;

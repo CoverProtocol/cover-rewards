@@ -24,6 +24,17 @@ interface IBonusRewards {
     uint256 rewardsWriteoff; // the amount of bonus tokens to write off when calculate rewards from last update
   }
 
+  function pools(address _lpToken) external view returns (
+    address bonusToken,
+    uint256 startTime,
+    uint256 endTime,
+    uint256 weeklyRewards,
+    uint256 accRewardsPerToken,
+    uint256 lastUpdatedAt
+  );
+  function users(address _lpToken, address _user) external view returns (uint256 amount,
+    uint256 rewardsWriteoff);
+
   function getPoolList() external view returns (address[] memory);
   function getAuthorizers(address _bonusToken) external view returns (address[] memory);
   function viewRewards(address _lpToken, address _user) external view returns (uint256 _rewards);
