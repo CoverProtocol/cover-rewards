@@ -7,8 +7,8 @@ pragma solidity ^0.8.0;
  * @author crypto-pumpkin
  */
 interface IBonusRewards {
-  event Deposit(address indexed miner, address indexed lpToken, uint256 amount);
-  event Withdraw(address indexed miner, address indexed lpToken, uint256 amount);
+  event Deposit(address indexed user, address indexed lpToken, uint256 amount);
+  event Withdraw(address indexed user, address indexed lpToken, uint256 amount);
 
   struct Pool {
     address bonusToken; // the external bonus token, like CRV
@@ -19,12 +19,13 @@ interface IBonusRewards {
     uint256 lastUpdatedAt; // last accumulated bonus update timestamp
   }
 
-  struct Miner {
+  struct User {
     uint256 amount;
     uint256 rewardsWriteoff; // the amount of bonus tokens to write off when calculate rewards from last update
   }
 
   function getPoolList() external view returns (address[] memory);
+  function viewRewards(address _lpToken, address _user) external view returns (uint256 _rewards);
 
   function updatePool(address _lpToken) external;
   function updatePools(uint256 _start, uint256 _end) external;
