@@ -23,7 +23,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   mapping(address => Pool) public pools;
   // bonus token => [] allowed authorizers to add bonus tokens
   mapping(address => address[]) private allowedTokenAuthorizers;
-  // bonusToken => 1 (allowed), allow anyone to use the bonus token to run a bonus program on any pool
+  // bonusToken => 1, used to avoid collecting bonus token when not ready
   mapping(address => uint8) private bonusTokenMap;
   // lpToken => User address => User data
   mapping(address => mapping(address => User)) public users;
