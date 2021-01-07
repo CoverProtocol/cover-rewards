@@ -10,10 +10,6 @@ pragma solidity ^0.8.0;
  *
  * By initialization, the owner account will be the one that called initializeOwner. This
  * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
  */
 contract Ownable {
     address private _owner;
