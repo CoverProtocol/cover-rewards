@@ -101,7 +101,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     emit Withdraw(msg.sender, _lpToken, amount);
   }
 
-  /// @notice always assign the same startTime and endTime for both CLAIM and NOCLAIM pool
+  /// @notice called by authorizers only
   function addBonus(
     address _lpToken,
     address _bonusToken,
@@ -116,6 +116,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     Pool memory pool = pools[_lpToken];
     require(pool.lastUpdatedAt != 0, "BonusRewards: pool does not exist");
     if (pool.endTime > 0) {
+      // when there is alreay a bonus program, make sure the program has ended properly
       require(pool.endTime + WEEK < block.timestamp, "BonusRewards: last bonus period hasn't ended");
       require(IERC20(pool.bonusToken).balanceOf(address(this)) == 0, "BonusRewards: last bonus not all claimed");
     }
@@ -137,19 +138,19 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     });
   }
 
-  /// @notice extend the current bonus program
+  /// @notice extend the current bonus program, the program has to be active (endTime is in the future)
   function extendBonus(address _lpToken, uint256 _transferAmount) external override {
     Pool memory pool = pools[_lpToken];
 
     require(_isAuthorized(pool.bonusToken), "BonusRewards: not authorized caller");
-    require(pool.endTime > block.timestamp, "BonusRewards: bonus ended, please start a new program");
+    require(pool.endTime > block.timestamp, "BonusRewards: bonus program ended, please start a new one");
 
     IERC20 bonusToken = IERC20(pool.bonusToken);
     uint256 balanceBefore = bonusToken.balanceOf(address(this));
     bonusToken.safeTransferFrom(msg.sender, address(this), _transferAmount);
     uint256 received = bonusToken.balanceOf(address(this)) - balanceBefore;
     // endTime is based on how much tokens transfered v.s. planned weekly rewards
-    uint256 endTime = received / pool.weeklyRewards * WEEK + pool.endTime;
+    uint256 endTime = (received / pool.weeklyRewards) * WEEK + pool.endTime;
 
     pools[_lpToken].endTime = endTime;
   }
