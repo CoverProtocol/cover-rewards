@@ -7,8 +7,6 @@ import "./utils/ReentrancyGuard.sol";
 import "./utils/SafeERC20.sol";
 import "./interfaces/IBonusRewards.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Cover Protocol Bonus Token Rewards contract
  * @author crypto-pumpkin
@@ -43,9 +41,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     if (user.amount > 0 && lpTotal > 0
           && pool.startTime < block.timestamp && pool.weeklyRewards > 0) {
       uint256 bonus = _calRewardsForTime(pool);
-      console.log('bonus: ', bonus);
       uint256 bonusPerToken = pool.accRewardsPerToken + bonus / lpTotal;
-      console.log('bonusPerToken: ', bonusPerToken);
       _rewards = user.amount * bonusPerToken / CAL_MULTIPLIER - user.rewardsWriteoff;
     }
   }
@@ -218,7 +214,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function _calRewardsForTime(Pool memory _pool) internal view returns (uint256) {
     uint256 timePassed = block.timestamp - _pool.lastUpdatedAt;
-    console.log('timePassed: ', timePassed);
     return _pool.weeklyRewards * CAL_MULTIPLIER * timePassed / WEEK;
   }
 
