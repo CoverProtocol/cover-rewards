@@ -14,9 +14,9 @@ import "./interfaces/IBonusRewards.sol";
 contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
-  address[] private poolList;
   uint256 private constant WEEK = 7 days;
   uint256 private constant CAL_MULTIPLIER = 1e12; // help calculate rewards/bonus PerToken only. 1e12 will allow meaningful $1 deposit in a $1bn pool
+  address[] private poolList;
   // lpToken => BonusToken
   mapping(address => Pool) public override pools;
   // lpToken => User address => User data
@@ -96,7 +96,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     User storage user = users[_lpToken][msg.sender];
     uint256 amount = user.amount;
     user.amount = 0;
-    user.rewardsWriteoff = 0;
     _safeTransfer(_lpToken, amount);
     emit Withdraw(msg.sender, _lpToken, amount);
   }
