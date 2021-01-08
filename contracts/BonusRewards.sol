@@ -45,15 +45,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     return pools[_lpToken];
   }
 
-  function getUser(address _lpToken, address _account) external view override returns (User memory) {
-    return users[_lpToken][_account];
-  }
-
-  function getAuthorizers(address _bonusTokenAddr) external view override returns (address[] memory) {
-    return allowedTokenAuthorizers[_bonusTokenAddr];
-  }
-
-  function viewRewards(address _lpToken, address _user) external view override returns (uint256[] memory) {
+  function viewRewards(address _lpToken, address _user) public view override returns (uint256[] memory) {
     Pool memory pool = pools[_lpToken];
     User memory user = users[_lpToken][_user];
     uint256[] memory rewards = new uint256[](pool.bonuses.length);
@@ -69,6 +61,14 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       }
     }
     return rewards;
+  }
+
+  function getUser(address _lpToken, address _account) external view override returns (User memory, uint256[] memory) {
+    return (users[_lpToken][_account], viewRewards(_lpToken, _account));
+  }
+
+  function getAuthorizers(address _bonusTokenAddr) external view override returns (address[] memory) {
+    return allowedTokenAuthorizers[_bonusTokenAddr];
   }
 
   /// @notice update pool's bonus per staked token till current block timestamp

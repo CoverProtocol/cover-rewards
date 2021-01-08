@@ -16,4 +16,4 @@ Contracts for Cover Protocol bonus tokens rewards
 * Run `npx hardhat run scripts/deploy.js --network kovan`.
 * Run `npx hardhat flatten contracts/BonusRewards.sol > flat.sol` will flatten all contracts into one
 * BonusRewards
-`npx hardhat verify --network kovan 0xa76Abb27A8adb5Fa957Ace75c446C8fF387504c1`
+`npx hardhat verify --network kovan 0xC930eBdD9459ea4733Cfd79572479C7a3784b9eC`

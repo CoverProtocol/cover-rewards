@@ -206,7 +206,7 @@ describe("BonusRewards", () => {
 
   it("Should emergency withdraw for userA", async function() {
     const lpTokenAddress = lpToken.address;
-    const user = await bonusRewards.getUser(lpTokenAddress, userAAddress);
+    const [user] = await bonusRewards.getUser(lpTokenAddress, userAAddress);
 
     const userABalBefore = await lpToken.balanceOf(userAAddress);
     await bonusRewards.connect(userAAccount).emergencyWithdraw(lpTokenAddress);
