@@ -91,6 +91,29 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     pool.lastUpdatedAt = block.timestamp;
   }
 
+  function claimRewards(address _lpToken) public override {
+    User storage user = users[_lpToken][msg.sender];
+    if (user.amount == 0) return;
+
+    updatePool(_lpToken);
+    _claimRewards(_lpToken, user);
+    Bonus[] memory bonuses = pools[_lpToken].bonuses;
+    for (uint256 i = 0; i < bonuses.length; i++) {
+      // update writeoff to match current acc rewards per token
+      if (user.rewardsWriteoffs.length == i) {
+        user.rewardsWriteoffs.push(user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER);
+      } else {
+        user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
+      }
+    }
+  }
+
+  function claimRewardsForPools(address[] calldata _lpTokens) external override {
+    for (uint256 i = 0; i < _lpTokens.length; i++) {
+      claimRewards(_lpTokens[i]);
+    }
+  }
+
   function deposit(address _lpToken, uint256 _amount) external override nonReentrant notPaused {
     require(pools[_lpToken].lastUpdatedAt > 0, "Blacksmith: pool does not exists");
     require(IERC20(_lpToken).balanceOf(msg.sender) >= _amount, "Blacksmith: insufficient balance");

@@ -158,7 +158,7 @@ describe("BonusRewards", () => {
     expect(userARewards.lt(WEEKLY_REWARDS)).to.be.true;
 
     // test claimRewards function for user A
-    await bonusRewards.connect(userAAccount).deposit(lpToken.address, 0);
+    await bonusRewards.connect(userAAccount).claimRewards(lpToken.address);
     const claimedRewardsA = await bonusToken.balanceOf(userAAddress);
     // console.log('claimedRewardsA: ', claimedRewardsA.toString());
     // console.log('rewardsEstimate: ', rewardsEstimate.toString());
@@ -230,9 +230,9 @@ describe("BonusRewards", () => {
   });
 
   it("Should addBonus if all bonusToken claimed", async function() {
-    await bonusRewards.connect(userAAccount).deposit(lpToken.address, 0);
-    await bonusRewards.connect(userBAccount).deposit(lpToken.address, 0);
-    await bonusRewards.deposit(lpToken.address, 0);
+    await bonusRewards.connect(userAAccount).claimRewards(lpToken.address);
+    await bonusRewards.connect(userBAccount).claimRewards(lpToken.address);
+    await bonusRewards.claimRewards(lpToken.address);
     const balBefore = await bonusToken.balanceOf(ownerAddress);
     await bonusRewards.collectDust(bonusToken.address, lpToken.address, 0);
     const balAfter = await bonusToken.balanceOf(ownerAddress);
