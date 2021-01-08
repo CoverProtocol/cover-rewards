@@ -54,6 +54,12 @@ describe("BonusRewards", () => {
     expect(await bonusRewards.paused()).to.equal(false);
   });
 
+  it("Should only set responders by owner", async function() {
+    await expectRevert(bonusRewards.connect(partnerAccount).setResponders([partnerAddress]), "Ownable: caller is not the owner");
+
+    await bonusRewards.setResponders([partnerAddress]);
+  });
+
   it("Should collectDust on random Token", async function() {
     const ownerBonusBalBefore = await bonusToken.balanceOf(ownerAddress);
     await bonusToken.mint(bonusRewards.address, ETHER_UINT_1);
@@ -71,10 +77,10 @@ describe("BonusRewards", () => {
   });
 
   it("Should addPoolsAndAllowBonus by owner under right condition", async function() {
-    await expectRevert(bonusRewards.connect(userAAccount).pause(true), "Ownable: caller is not the owner");
+    await expectRevert(bonusRewards.connect(userAAccount).pause(true), "BonusRewards: caller not responder");
     await bonusRewards.pause(true);
     await expectRevert(bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "BonusRewards: paused");
-    await bonusRewards.pause(false);
+    await bonusRewards.connect(partnerAccount).pause(false);
 
     await bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]);
     const poolList = await bonusRewards.getPoolList();

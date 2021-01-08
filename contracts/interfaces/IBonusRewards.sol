@@ -30,6 +30,7 @@ interface IBonusRewards {
   }
 
   function getPoolList() external view returns (address[] memory);
+  function getResponders() external view returns (address[] memory);
   function getPool(address _lpToken) external view returns (Pool memory);
   function getUser(address _lpToken, address _account) external view returns (User memory);
   function getAuthorizers(address _bonusTokenAddr) external view returns (address[] memory);
@@ -56,6 +57,7 @@ interface IBonusRewards {
   // collect to owner
 
   // only owner
+  function setResponders(address[] calldata _responders) external;
   function pause(bool _paused) external;
   function collectDust(address _token, address _lpToken, uint256 _poolBonusId) external;
   function addPoolsAndAllowBonus(

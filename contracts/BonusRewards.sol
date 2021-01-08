@@ -17,6 +17,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   uint256 private constant WEEK = 7 days;
   uint256 private constant CAL_MULTIPLIER = 1e12; // help calculate rewards/bonus PerToken only. 1e12 will allow meaningful $1 deposit in a $1bn pool
   bool public paused;
+  address[] private responders;
   address[] private poolList;
   // lpToken => Pool
   mapping(address => Pool) private pools;
@@ -34,6 +35,10 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function getPoolList() external view override returns (address[] memory) {
     return poolList;
+  }
+
+  function getResponders() external view override returns (address[] memory) {
+    return responders;
   }
 
   function getPool(address _lpToken) external view override returns (Pool memory) {
@@ -243,8 +248,24 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     }
   }
 
-  function pause(bool _paused) external override onlyOwner {
+  function setResponders(address[] calldata _responders) external override onlyOwner {
+    responders = _responders;
+  }
+
+  function pause(bool _paused) external override {
+    require(_isResponder(msg.sender), "BonusRewards: caller not responder");
     paused = _paused;
+  }
+
+  function _isResponder(address _addr) private view returns (bool) {
+    if (_addr == owner()) return true;
+    address[] memory respondersCopy = responders;
+    for (uint256 i = 0; i < respondersCopy.length; i++) {
+      if (respondersCopy[i] == _addr) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// @notice tranfer upto what the contract has
