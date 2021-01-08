@@ -252,7 +252,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     responders = _responders;
   }
 
-  function pause(bool _paused) external override {
+  function setPaused(bool _paused) external override {
     require(_isResponder(msg.sender), "BonusRewards: caller not responder");
     paused = _paused;
   }

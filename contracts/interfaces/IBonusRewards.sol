@@ -58,7 +58,7 @@ interface IBonusRewards {
 
   // only owner
   function setResponders(address[] calldata _responders) external;
-  function pause(bool _paused) external;
+  function setPaused(bool _paused) external;
   function collectDust(address _token, address _lpToken, uint256 _poolBonusId) external;
   function addPoolsAndAllowBonus(
     address[] calldata _lpTokens,

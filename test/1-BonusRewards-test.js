@@ -77,10 +77,10 @@ describe("BonusRewards", () => {
   });
 
   it("Should addPoolsAndAllowBonus by owner under right condition", async function() {
-    await expectRevert(bonusRewards.connect(userAAccount).pause(true), "BonusRewards: caller not responder");
-    await bonusRewards.pause(true);
+    await expectRevert(bonusRewards.connect(userAAccount).setPaused(true), "BonusRewards: caller not responder");
+    await bonusRewards.setPaused(true);
     await expectRevert(bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "BonusRewards: paused");
-    await bonusRewards.connect(partnerAccount).pause(false);
+    await bonusRewards.connect(partnerAccount).setPaused(false);
 
     await bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]);
     const poolList = await bonusRewards.getPoolList();
