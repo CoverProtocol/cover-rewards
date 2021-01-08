@@ -269,13 +269,15 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   /// @notice tranfer upto what the contract has
-  function _safeTransfer(address _token, uint256 _amount) private {
+  function _safeTransfer(address _token, uint256 _amount) private returns (uint256 _transferred) {
     IERC20 token = IERC20(_token);
     uint256 balance = token.balanceOf(address(this));
     if (balance > _amount) {
       token.safeTransfer(msg.sender, _amount);
+      _transferred = _amount;
     } else if (balance > 0) {
       token.safeTransfer(msg.sender, balance);
+      _transferred = balance;
     }
   }
 
@@ -294,8 +296,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       for (uint256 i = 0; i < bonuses.length; i++) {
         uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - _user.rewardsWriteoffs[i];
         if (bonusSinceLastUpdate > 0) {
-          pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - bonusSinceLastUpdate;
-          _safeTransfer(bonuses[i].bonusTokenAddr, bonusSinceLastUpdate); // transfer bonus tokens to user
+          uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, bonusSinceLastUpdate); // transfer bonus tokens to user
+          pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
         }
       }
     }
