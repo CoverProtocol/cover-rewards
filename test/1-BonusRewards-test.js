@@ -51,26 +51,32 @@ describe("BonusRewards", () => {
 
   it("Should deploy correctly", async function() {
     expect(await bonusRewards.owner()).to.equal(ownerAddress);
+    expect(await bonusRewards.paused()).to.equal(false);
   });
 
-  it("Should collectDust", async function() {
+  it("Should collectDust on random Token", async function() {
     const ownerBonusBalBefore = await bonusToken.balanceOf(ownerAddress);
     await bonusToken.mint(bonusRewards.address, ETHER_UINT_1);
-    await bonusRewards.collectDust(bonusToken.address, bonusToken.address);
+    await bonusRewards.collectDust(bonusToken.address, bonusToken.address, 0);
     const ownerBonusBalAfter = await bonusToken.balanceOf(ownerAddress);
     expect(ownerBonusBalAfter.sub(ownerBonusBalBefore)).to.equal(ETHER_UINT_1);
   });
 
   it("Should NOT addPoolsAndAllowBonus by non-owner", async function() {
-    await expectRevert(bonusRewards.connect(partnerAccount).addPoolsAndAllowBonus([lpToken.address], bonusToken.address, [partnerAddress]), "Ownable: caller is not the owner");
+    await expectRevert(bonusRewards.connect(partnerAccount).addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "Ownable: caller is not the owner");
   });
 
   it("Should NOT addPoolsAndAllowBonus by non-owner", async function() {
-    await expectRevert(bonusRewards.connect(partnerAccount).addPoolsAndAllowBonus([lpToken.address], bonusToken.address, [partnerAddress]), "Ownable: caller is not the owner");
+    await expectRevert(bonusRewards.connect(partnerAccount).addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "Ownable: caller is not the owner");
   });
 
-  it("Should addPoolsAndAllowBonus by owner", async function() {
-    await bonusRewards.addPoolsAndAllowBonus([lpToken.address], bonusToken.address, [partnerAddress]);
+  it("Should addPoolsAndAllowBonus by owner under right condition", async function() {
+    await expectRevert(bonusRewards.connect(userAAccount).pause(true), "Ownable: caller is not the owner");
+    await bonusRewards.pause(true);
+    await expectRevert(bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "BonusRewards: paused");
+    await bonusRewards.pause(false);
+
+    await bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]);
     const poolList = await bonusRewards.getPoolList();
     expect(poolList).to.deep.equal([lpToken.address]);
     const authorizers = await bonusRewards.getAuthorizers(bonusToken.address);
@@ -78,11 +84,11 @@ describe("BonusRewards", () => {
   });
 
   it("Should NOT collectDust on lpToken", async function() {
-    await expectRevert(bonusRewards.collectDust(lpToken.address, lpToken.address), "BonusRewards: lpToken, not allowed");
+    await expectRevert(bonusRewards.collectDust(lpToken.address, lpToken.address, 0), "BonusRewards: lpToken, not allowed");
   });
 
   it("Should collectDust on bonusToken if not active", async function() {
-    await bonusRewards.collectDust(bonusToken.address, lpToken.address);
+    await bonusRewards.collectDust(bonusToken.address, lpToken.address, 0);
   });
 
   it("Should addBonus by partner correctly", async function() {
@@ -92,7 +98,7 @@ describe("BonusRewards", () => {
 
     await bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS);
 
-    const [bonusTokenAddr, start, end, weeklyRewards, accRewardsPerToken] = await bonusRewards.pools(lpToken.address);
+    const [[[bonusTokenAddr, start, end, weeklyRewards, accRewardsPerToken]],] = await bonusRewards.getPool(lpToken.address);
     expect(bonusTokenAddr).to.equal(bonusToken.address);
     expect(start.toNumber()).to.equal(startTime);
     expect(end.toNumber()).to.equal(endTime);
@@ -121,11 +127,11 @@ describe("BonusRewards", () => {
 
   it("Should extendBonus by partner correctly", async function() {
     const week = 7 * 24 * 60 * 60;
-    const [,, endBefore,] = await bonusRewards.pools(lpToken.address);
+    const [[[,, endBefore,]]] = await bonusRewards.getPool(lpToken.address);
 
-    await bonusRewards.connect(partnerAccount).extendBonus(lpToken.address, WEEKLY_REWARDS);
+    await bonusRewards.connect(partnerAccount).extendBonus(lpToken.address, 0, bonusToken.address, WEEKLY_REWARDS);
 
-    const [,, end,] = await bonusRewards.pools(lpToken.address);
+    const [[[,, end,]]] = await bonusRewards.getPool(lpToken.address);
     expect(end.sub(endBefore).toNumber()).to.equal(week);
   });
 
@@ -139,7 +145,7 @@ describe("BonusRewards", () => {
     const rewardsMax = WEEKLY_REWARDS.mul(5).div(7);
 
     // test view minedRewards function
-    const userARewards = await bonusRewards.viewRewards(lpTokenAddress, userAAddress);
+    const [userARewards] = await bonusRewards.viewRewards(lpTokenAddress, userAAddress);
     // console.log('userARewards: ', userARewards.toString());
     // console.log('rewardsEstimate: ', rewardsEstimate.toString());
     expect(userARewards.gt(rewardsEstimate)).to.be.true;
@@ -194,7 +200,7 @@ describe("BonusRewards", () => {
 
   it("Should emergency withdraw for userA", async function() {
     const lpTokenAddress = lpToken.address;
-    const user = await bonusRewards.users(lpTokenAddress, userAAddress);
+    const user = await bonusRewards.getUser(lpTokenAddress, userAAddress);
 
     const userABalBefore = await lpToken.balanceOf(userAAddress);
     await bonusRewards.connect(userAAccount).emergencyWithdraw(lpTokenAddress);
@@ -204,7 +210,7 @@ describe("BonusRewards", () => {
   });
 
   it("Should NOT collectDust on bonusToken if active", async function() {
-    await expectRevert(bonusRewards.collectDust(bonusToken.address, lpToken.address), "BonusRewards: not ready");
+    await expectRevert(bonusRewards.collectDust(bonusToken.address, lpToken.address, 0), "BonusRewards: not ready");
   });
 
   it("Should NOT addBonus if not all bonusToken claimed", async function() {
@@ -221,7 +227,10 @@ describe("BonusRewards", () => {
     await bonusRewards.connect(userAAccount).deposit(lpToken.address, 0);
     await bonusRewards.connect(userBAccount).deposit(lpToken.address, 0);
     await bonusRewards.deposit(lpToken.address, 0);
-    await bonusRewards.collectDust(bonusToken.address, lpToken.address);
+    const balBefore = await bonusToken.balanceOf(ownerAddress);
+    await bonusRewards.collectDust(bonusToken.address, lpToken.address, 0);
+    const balAfter = await bonusToken.balanceOf(ownerAddress);
+    // console.log(balAfter.sub(balBefore).toString());
 
     const latest = await time.latest();
     const startTime = latest.toNumber() + 2;
