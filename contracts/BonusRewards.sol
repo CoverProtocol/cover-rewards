@@ -168,7 +168,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256 _weeklyRewards,
     uint256 _transferAmount
   ) external override notPaused {
-    require(_isAuthorized(_bonusTokenAddr), "BonusRewards: not authorized caller");
+    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(_startTime >= block.timestamp, "BonusRewards: startTime in the past");
 
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
@@ -209,7 +209,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
 
     require(bonus.bonusTokenAddr == _bonusTokenAddr, "BonusRewards: bonus and id dont match");
-    require(_isAuthorized(_bonusTokenAddr), "BonusRewards: not authorized caller");
+    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(bonus.endTime > block.timestamp, "BonusRewards: bonus program ended, please start a new one");
 
     IERC20 bonusTokenAddr = IERC20(_bonusTokenAddr);
@@ -276,19 +276,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   function setPaused(bool _paused) external override {
-    require(_isResponder(msg.sender), "BonusRewards: caller not responder");
+    require(_isAuthorized(msg.sender, responders), "BonusRewards: caller not responder");
     paused = _paused;
-  }
-
-  function _isResponder(address _addr) private view returns (bool) {
-    if (_addr == owner()) return true;
-    address[] memory respondersCopy = responders;
-    for (uint256 i = 0; i < respondersCopy.length; i++) {
-      if (respondersCopy[i] == _addr) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /// @notice tranfer upto what the contract has
@@ -328,17 +317,14 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   // only owner or authorized users can add bonus tokens
-  function _isAuthorized(address _token) private view returns (bool) {
-    if (msg.sender == owner()) return true;
+  function _isAuthorized(address _addr, address[] memory checkList) private view returns (bool) {
+    if (_addr == owner()) return true;
 
-    address[] memory authorizers = allowedTokenAuthorizers[_token];
-    bool authorized = false;
-    for (uint256 i = 0; i < authorizers.length; i++) {
-      if (msg.sender == authorizers[i]) {
-        authorized = true;
-        break;
+    for (uint256 i = 0; i < checkList.length; i++) {
+      if (msg.sender == checkList[i]) {
+        return true;
       }
     }
-    return authorized;
+    return false;
   }
 }
