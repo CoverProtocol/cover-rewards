@@ -37,10 +37,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     return poolList;
   }
 
-  function getResponders() external view override returns (address[] memory) {
-    return responders;
-  }
-
   function getPool(address _lpToken) external view override returns (Pool memory) {
     return pools[_lpToken];
   }
@@ -69,6 +65,10 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function getAuthorizers(address _bonusTokenAddr) external view override returns (address[] memory) {
     return allowedTokenAuthorizers[_bonusTokenAddr];
+  }
+
+  function getResponders() external view override returns (address[] memory) {
+    return responders;
   }
 
   /// @notice update pool's bonus per staked token till current block timestamp
@@ -305,10 +305,11 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   function _calRewardsForTime(Bonus memory _bonus, uint256 _lastUpdatedAt) internal view returns (uint256) {
-    if (_bonus.endTime < _lastUpdatedAt) return 0;
+    if (_bonus.endTime <= _lastUpdatedAt) return 0;
 
-    uint256 calTime = block.timestamp > _bonus.endTime ? _bonus.endTime : block.timestamp;
-    uint256 timePassed = calTime - _lastUpdatedAt;
+    uint256 calEndTime = block.timestamp > _bonus.endTime ? _bonus.endTime : block.timestamp;
+    uint256 calStartTime = _lastUpdatedAt > _bonus.startTime ? _lastUpdatedAt : _bonus.startTime;
+    uint256 timePassed = calEndTime - calStartTime;
     return _bonus.weeklyRewards * CAL_MULTIPLIER * timePassed / WEEK;
   }
 
