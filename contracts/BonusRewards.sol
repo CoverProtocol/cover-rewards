@@ -228,6 +228,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
     // add bonus tokens and their authorizers (who are allowed to add the token to pool)
     for (uint256 i = 0; i < _bonusTokenAddrs.length; i++) {
+      require(pools[_bonusTokenAddrs[i]].lastUpdatedAt == 0, "BonusRewards: lpToken, not allowed");
       allowedTokenAuthorizers[_bonusTokenAddrs[i]] = _authorizers;
       bonusTokenAddrMap[_bonusTokenAddrs[i]] = 1;
     }

@@ -82,6 +82,10 @@ describe("BonusRewards", () => {
   });
 
   it("Should addPoolsAndAllowBonus by owner under right condition", async function() {
+    // cannot add when bonus is also lptoken
+    await expectRevert(bonusRewards.addPoolsAndAllowBonus([lpToken.address], [lpToken.address], [partnerAddress]), "BonusRewards: lpToken, not allowed");
+
+    // cannot add when paused
     await expectRevert(bonusRewards.connect(userAAccount).setPaused(true), "BonusRewards: caller not responder");
     await bonusRewards.setPaused(true);
     await expectRevert(bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "BonusRewards: paused");
