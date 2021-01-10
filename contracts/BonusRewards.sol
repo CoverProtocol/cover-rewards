@@ -98,15 +98,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
     updatePool(_lpToken);
     _claimRewards(_lpToken, user);
-    Bonus[] memory bonuses = pools[_lpToken].bonuses;
-    for (uint256 i = 0; i < bonuses.length; i++) {
-      // update writeoff to match current acc rewards per token
-      if (user.rewardsWriteoffs.length == i) {
-        user.rewardsWriteoffs.push(user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER);
-      } else {
-        user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
-      }
-    }
+    _updateUserWriteoffs(_lpToken);
   }
 
   function claimRewardsForPools(address[] calldata _lpTokens) external override {
@@ -122,36 +114,21 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     updatePool(_lpToken);
     User storage user = users[_lpToken][msg.sender];
     _claimRewards(_lpToken, user);
-    Bonus[] memory bonuses = pools[_lpToken].bonuses;
     user.amount = user.amount + _amount;
-    for (uint256 i = 0; i < bonuses.length; i++) {
-      // update writeoff to match current acc rewards per token
-      if (user.rewardsWriteoffs.length == i) {
-        user.rewardsWriteoffs.push(user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER);
-      } else {
-        user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
-      }
-    }
+    _updateUserWriteoffs(_lpToken);
 
     IERC20(_lpToken).safeTransferFrom(msg.sender, address(this), _amount);
     emit Deposit(msg.sender, _lpToken, _amount);
   }
 
   function withdraw(address _lpToken, uint256 _amount) external override nonReentrant notPaused {
-    User storage user = users[_lpToken][msg.sender];
     updatePool(_lpToken);
+
+    User storage user = users[_lpToken][msg.sender];
     _claimRewards(_lpToken, user);
     uint256 amount = user.amount > _amount ? _amount : user.amount;
     user.amount = user.amount - amount;
-    Bonus[] memory bonuses = pools[_lpToken].bonuses;
-    for (uint256 i = 0; i < bonuses.length; i++) {
-      // update writeoff to match current acc rewards per tokenå
-      if (user.rewardsWriteoffs.length == i) {
-        user.rewardsWriteoffs.push(user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER);
-      } else {
-        user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
-      }
-    }
+    _updateUserWriteoffs(_lpToken);
 
     _safeTransfer(_lpToken, amount);
     emit Withdraw(msg.sender, _lpToken, amount);
@@ -284,6 +261,19 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   function setPaused(bool _paused) external override {
     require(_isAuthorized(msg.sender, responders), "BonusRewards: caller not responder");
     paused = _paused;
+  }
+
+  function _updateUserWriteoffs(address _lpToken) private {
+    Bonus[] memory bonuses = pools[_lpToken].bonuses;
+    User storage user = users[_lpToken][msg.sender];
+    for (uint256 i = 0; i < bonuses.length; i++) {
+      // update writeoff to match current acc rewards per token
+      if (user.rewardsWriteoffs.length == i) {
+        user.rewardsWriteoffs.push(user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER);
+      } else {
+        user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
+      }
+    }
   }
 
   /// @notice tranfer upto what the contract has
