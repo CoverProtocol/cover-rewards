@@ -49,11 +49,12 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
     for (uint256 i = 0; i < rewards.length; i ++) {
       Bonus memory bonus = pool.bonuses[i];
+      uint256 rewardsWriteoffsLen = user.rewardsWriteoffs.length;
       if (bonus.startTime < block.timestamp && bonus.remBonus > 0) {
         uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
         uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
         uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
-        uint256 rewardsWriteoff = user.rewardsWriteoffs.length == i ? 0 : user.rewardsWriteoffs[i];
+        uint256 rewardsWriteoff = rewardsWriteoffsLen == i ? 0 : user.rewardsWriteoffs[i];
         rewards[i] = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
       }
     }
@@ -93,7 +94,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   function claimRewards(address _lpToken) public override {
-    User storage user = users[_lpToken][msg.sender];
+    User memory user = users[_lpToken][msg.sender];
     if (user.amount == 0) return;
 
     updatePool(_lpToken);
@@ -121,6 +122,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     emit Deposit(msg.sender, _lpToken, _amount);
   }
 
+  /// @notice withdraw up to all user deposited
   function withdraw(address _lpToken, uint256 _amount) external override nonReentrant notPaused {
     updatePool(_lpToken);
 
@@ -206,7 +208,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     pools[_lpToken].bonuses[_poolBonusId].remBonus = bonus.remBonus + received;
   }
 
-  /// @notice add pools and authorizers to add bonus tokens for pools
+  /// @notice add pools and authorizers to add bonus tokens for pools, combine two calls into one. Only reason we add pools is when bonus tokens are needed
   function addPoolsAndAllowBonus(
     address[] calldata _lpTokens,
     address[] calldata _bonusTokenAddrs,
@@ -300,8 +302,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function _claimRewards(address _lpToken, User memory _user) private {
     // only claim if user has deposited before
-    uint256 rewardsWriteoffsLen = _user.rewardsWriteoffs.length;
-    if (_user.amount > 0 && rewardsWriteoffsLen > 0) {
+    if (_user.amount > 0) {
+      uint256 rewardsWriteoffsLen = _user.rewardsWriteoffs.length;
       Bonus[] memory bonuses = pools[_lpToken].bonuses;
       for (uint256 i = 0; i < bonuses.length; i++) {
         uint256 rewardsWriteoff = rewardsWriteoffsLen == i ? 0 : _user.rewardsWriteoffs[i];
