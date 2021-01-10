@@ -94,7 +94,7 @@ describe("BonusRewards", () => {
     await bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]);
     const poolList = await bonusRewards.getPoolList();
     expect(poolList).to.deep.equal([lpToken.address]);
-    const authorizers = await bonusRewards.getAuthorizers(bonusToken.address);
+    const authorizers = await bonusRewards.getAuthorizers(lpToken.address, bonusToken.address);
     expect(authorizers).to.deep.equal([partnerAddress]);
   });
 
@@ -118,7 +118,7 @@ describe("BonusRewards", () => {
 
     await expectRevert(bonusRewards.connect(userAAccount).addBonus(lpToken.address, bonusToken.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS), "BonusRewards: not authorized caller");
     await expectRevert(bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken.address, startTime - 1, WEEKLY_REWARDS, WEEKLY_REWARDS), "BonusRewards: startTime in the past");
-    await expectRevert(bonusRewards.connect(partnerAccount).addBonus(userAAddress, bonusToken.address, endTime, WEEKLY_REWARDS, WEEKLY_REWARDS), "BonusRewards: pool does not exist");
+    await expectRevert(bonusRewards.addBonus(userAAddress, bonusToken.address, endTime, WEEKLY_REWARDS, WEEKLY_REWARDS), "BonusRewards: pool does not exist");
     await expectRevert(bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken.address, endTime, WEEKLY_REWARDS, WEEKLY_REWARDS), "BonusRewards: last bonus period hasn't ended");
   });
 
@@ -237,7 +237,7 @@ describe("BonusRewards", () => {
   it("Should add 2nd Bonus and claim", async function() {
     const latest = await time.latest();
     const startTime = latest.toNumber() + 2;
-    await bonusRewards.addPoolsAndAllowBonus([], [bonusToken2.address], [partnerAddress]);
+    await bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken2.address], [partnerAddress]);
     await bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken2.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS);
 
     const timePassed = 24 * 60 * 60;

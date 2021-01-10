@@ -33,7 +33,7 @@ interface IBonusRewards {
   function getResponders() external view returns (address[] memory);
   function getPool(address _lpToken) external view returns (Pool memory);
   function getUser(address _lpToken, address _account) external view returns (User memory _user, uint256[] memory _rewards);
-  function getAuthorizers(address _bonusTokenAddr) external view returns (address[] memory);
+  function getAuthorizers(address _lpToken, address _bonusTokenAddr) external view returns (address[] memory);
   function viewRewards(address _lpToken, address _user) external view  returns (uint256[] memory);
 
   function updatePool(address _lpToken) external;

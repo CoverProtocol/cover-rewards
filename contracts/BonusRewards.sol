@@ -24,8 +24,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   mapping(address => Pool) private pools;
   // lpToken => User address => User data
   mapping(address => mapping(address => User)) private users;
-  // bonus token => [] allowed authorizers to add bonus tokens
-  mapping(address => address[]) private allowedTokenAuthorizers;
+  // lpToken => bonus token => [] allowed authorizers to add bonus tokens
+  mapping(address => mapping(address => address[])) private allowedTokenAuthorizers;
   // bonusTokenAddr => 1, used to avoid collecting bonus token when not ready
   mapping(address => uint8) private bonusTokenAddrMap;
 
@@ -66,8 +66,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     return (users[_lpToken][_account], viewRewards(_lpToken, _account));
   }
 
-  function getAuthorizers(address _bonusTokenAddr) external view override returns (address[] memory) {
-    return allowedTokenAuthorizers[_bonusTokenAddr];
+  function getAuthorizers(address _lpToken, address _bonusTokenAddr) external view override returns (address[] memory) {
+    return allowedTokenAuthorizers[_lpToken][_bonusTokenAddr];
   }
 
   function getResponders() external view override returns (address[] memory) {
@@ -156,7 +156,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256 _weeklyRewards,
     uint256 _transferAmount
   ) external override notPaused {
-    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_bonusTokenAddr]), "BonusRewards: not authorized caller");
+    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(_startTime >= block.timestamp, "BonusRewards: startTime in the past");
 
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
@@ -195,7 +195,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     address _bonusTokenAddr,
     uint256 _transferAmount
   ) external override notPaused {
-    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_bonusTokenAddr]), "BonusRewards: not authorized caller");
+    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
 
     Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
     require(bonus.bonusTokenAddr == _bonusTokenAddr, "BonusRewards: bonus and id dont match");
@@ -220,17 +220,22 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   ) external override onlyOwner notPaused {
     // add pools
     for (uint256 i = 0; i < _lpTokens.length; i++) {
-      Pool memory pool = pools[_lpTokens[i]];
-      require(pool.lastUpdatedAt == 0, "BonusRewards: pool exists");
-      pools[_lpTokens[i]].lastUpdatedAt = block.timestamp;
-      poolList.push(_lpTokens[i]);
-    }
+      address _lpToken = _lpTokens[i];
+      Pool memory pool = pools[_lpToken];
+      if (pool.lastUpdatedAt == 0) {
+        pools[_lpToken].lastUpdatedAt = block.timestamp;
+        poolList.push(_lpToken);
+      }
 
-    // add bonus tokens and their authorizers (who are allowed to add the token to pool)
-    for (uint256 i = 0; i < _bonusTokenAddrs.length; i++) {
-      require(pools[_bonusTokenAddrs[i]].lastUpdatedAt == 0, "BonusRewards: lpToken, not allowed");
-      allowedTokenAuthorizers[_bonusTokenAddrs[i]] = _authorizers;
-      bonusTokenAddrMap[_bonusTokenAddrs[i]] = 1;
+      // add bonus tokens and their authorizers (who are allowed to add the token to pool)
+      for (uint256 j = 0; j < _bonusTokenAddrs.length; j++) {
+        address _bonusTokenAddr = _bonusTokenAddrs[j];
+        require(pools[_bonusTokenAddr].lastUpdatedAt == 0, "BonusRewards: lpToken, not allowed");
+        allowedTokenAuthorizers[_lpToken][_bonusTokenAddr] = _authorizers;
+        if (bonusTokenAddrMap[_bonusTokenAddr] == 0) {
+          bonusTokenAddrMap[_bonusTokenAddr] = 1;
+        }
+      }
     }
   }
 
