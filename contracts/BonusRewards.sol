@@ -141,7 +141,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     User storage user = users[_lpToken][msg.sender];
     updatePool(_lpToken);
     _claimRewards(_lpToken, user);
-    user.amount = user.amount - _amount;
+    uint256 amount = user.amount > _amount ? _amount : user.amount;
+    user.amount = user.amount - amount;
     Bonus[] memory bonuses = pools[_lpToken].bonuses;
     for (uint256 i = 0; i < bonuses.length; i++) {
       // update writeoff to match current acc rewards per tokenå
@@ -152,8 +153,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       }
     }
 
-    _safeTransfer(_lpToken, _amount);
-    emit Withdraw(msg.sender, _lpToken, _amount);
+    _safeTransfer(_lpToken, amount);
+    emit Withdraw(msg.sender, _lpToken, amount);
   }
 
   /// @notice withdraw all without rewards
