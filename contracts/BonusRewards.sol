@@ -47,14 +47,14 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256[] memory rewards = new uint256[](pool.bonuses.length);
     if (user.amount <= 0) return rewards;
 
+    uint256 rewardsWriteoffsLen = user.rewardsWriteoffs.length;
     for (uint256 i = 0; i < rewards.length; i ++) {
       Bonus memory bonus = pool.bonuses[i];
-      uint256 rewardsWriteoffsLen = user.rewardsWriteoffs.length;
       if (bonus.startTime < block.timestamp && bonus.remBonus > 0) {
         uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
         uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
         uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
-        uint256 rewardsWriteoff = rewardsWriteoffsLen == i ? 0 : user.rewardsWriteoffs[i];
+        uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : user.rewardsWriteoffs[i];
         rewards[i] = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
       }
     }
