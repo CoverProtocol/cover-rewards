@@ -77,7 +77,9 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   /// @notice update pool's bonus per staked token till current block timestamp
   function updatePool(address _lpToken) public override {
     Pool storage pool = pools[_lpToken];
-    if (block.timestamp <= pool.lastUpdatedAt) return;
+
+    uint256 poolLastUpdatedAt = pool.lastUpdatedAt;
+    if (poolLastUpdatedAt == 0 || block.timestamp <= poolLastUpdatedAt) return;
     uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
     if (lpTotal == 0) {
       pool.lastUpdatedAt = block.timestamp;
@@ -243,19 +245,19 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   function collectDust(address _token, address _lpToken, uint256 _poolBonusId) external override onlyOwner {
     require(pools[_token].lastUpdatedAt == 0, "BonusRewards: lpToken, not allowed");
 
-    uint256 balance = IERC20(_token).balanceOf(address(this));
-    if (bonusTokenAddrMap[_token] == 1) {
-      // bonus token
-      Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
-      require(bonus.bonusTokenAddr == _token, "BonusRewards: wrong pool");
-      require(bonus.endTime + WEEK < block.timestamp, "BonusRewards: not ready");
-      balance = bonus.remBonus;
-      pools[_lpToken].bonuses[_poolBonusId].remBonus = 0;
-    }
-
     if (_token == address(0)) { // token address(0) = ETH
       payable(owner()).transfer(address(this).balance);
     } else {
+      uint256 balance = IERC20(_token).balanceOf(address(this));
+      if (bonusTokenAddrMap[_token] == 1) {
+        // bonus token
+        Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
+        require(bonus.bonusTokenAddr == _token, "BonusRewards: wrong pool");
+        require(bonus.endTime + WEEK < block.timestamp, "BonusRewards: not ready");
+        balance = bonus.remBonus;
+        pools[_lpToken].bonuses[_poolBonusId].remBonus = 0;
+      }
+
       IERC20(_token).transfer(owner(), balance);
     }
   }
@@ -310,7 +312,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       uint256 rewardsWriteoffsLen = _user.rewardsWriteoffs.length;
       Bonus[] memory bonuses = pools[_lpToken].bonuses;
       for (uint256 i = 0; i < bonuses.length; i++) {
-        uint256 rewardsWriteoff = rewardsWriteoffsLen == i ? 0 : _user.rewardsWriteoffs[i];
+        uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : _user.rewardsWriteoffs[i];
         uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - rewardsWriteoff;
         if (bonusSinceLastUpdate > 0) {
           uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, bonusSinceLastUpdate); // transfer bonus tokens to user
