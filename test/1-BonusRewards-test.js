@@ -98,10 +98,6 @@ describe("BonusRewards", () => {
     await expectRevert(bonusRewards.collectDust(lpToken.address, lpToken.address, 0), "BonusRewards: lpToken, not allowed");
   });
 
-  it("Should collectDust on bonusToken if not active", async function() {
-    await bonusRewards.collectDust(bonusToken.address, lpToken.address, 0);
-  });
-
   it("Should addBonus by partner correctly", async function() {
     const latest = await time.latest();
     startTime = latest.toNumber() + 1;

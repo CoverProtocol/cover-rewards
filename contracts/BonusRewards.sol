@@ -160,7 +160,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
     Pool memory pool = pools[_lpToken];
     require(pool.lastUpdatedAt != 0, "BonusRewards: pool does not exist");
-    Bonus[] memory bonues = pool.bonuses;
+    Bonus[] memory bonuses = pool.bonuses;
     for (uint256 i = 0; i < bonuses.length; i++) {
       if (bonuses[i].bonusTokenAddr == _bonusTokenAddr) {
         // when there is alreay a bonus program with the same bonus token, make sure the program has ended properly
