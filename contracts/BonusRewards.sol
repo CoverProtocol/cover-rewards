@@ -10,6 +10,7 @@ import "./interfaces/IBonusRewards.sol";
 /**
  * @title Cover Protocol Bonus Token Rewards contract
  * @author crypto-pumpkin
+ * @notice ETH is not allowed to be an bonus token, use wETH instead
  */
 contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   using SafeERC20 for IERC20;
@@ -159,11 +160,12 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
     Pool memory pool = pools[_lpToken];
     require(pool.lastUpdatedAt != 0, "BonusRewards: pool does not exist");
-    for (uint256 i = 0; i < pool.bonuses.length; i ++) {
-      if (pool.bonuses[i].bonusTokenAddr == _bonusTokenAddr) {
+    Bonus[] memory bonues = pool.bonuses;
+    for (uint256 i = 0; i < bonuses.length; i++) {
+      if (bonuses[i].bonusTokenAddr == _bonusTokenAddr) {
         // when there is alreay a bonus program with the same bonus token, make sure the program has ended properly
-        require(pool.bonuses[i].endTime + WEEK < block.timestamp, "BonusRewards: last bonus period hasn't ended");
-        require(pool.bonuses[i].remBonus == 0, "BonusRewards: last bonus not all claimed");
+        require(bonuses[i].endTime + WEEK < block.timestamp, "BonusRewards: last bonus period hasn't ended");
+        require(bonuses[i].remBonus == 0, "BonusRewards: last bonus not all claimed");
       }
     }
 
@@ -172,7 +174,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     bonusTokenAddr.safeTransferFrom(msg.sender, address(this), _transferAmount);
     uint256 received = bonusTokenAddr.balanceOf(address(this)) - balanceBefore;
     // endTime is based on how much tokens transfered v.s. planned weekly rewards
-    uint256 endTime = received / _weeklyRewards * WEEK + _startTime;
+    uint256 endTime = (received / _weeklyRewards) * WEEK + _startTime;
 
     pools[_lpToken].bonuses.push(Bonus({
       bonusTokenAddr: _bonusTokenAddr,
@@ -191,10 +193,10 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     address _bonusTokenAddr,
     uint256 _transferAmount
   ) external override notPaused {
-    Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
-
-    require(bonus.bonusTokenAddr == _bonusTokenAddr, "BonusRewards: bonus and id dont match");
     require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_bonusTokenAddr]), "BonusRewards: not authorized caller");
+
+    Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
+    require(bonus.bonusTokenAddr == _bonusTokenAddr, "BonusRewards: bonus and id dont match");
     require(bonus.endTime > block.timestamp, "BonusRewards: bonus program ended, please start a new one");
 
     IERC20 bonusTokenAddr = IERC20(_bonusTokenAddr);
@@ -208,22 +210,24 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     pools[_lpToken].bonuses[_poolBonusId].remBonus = bonus.remBonus + received;
   }
 
-  /// @notice add pools and authorizers to add bonus tokens for pools, combine two calls into one. Only reason we add pools is when bonus tokens are needed
+  /// @notice add pools and authorizers to add bonus tokens for pools, combine two calls into one. Only reason we add pools is when bonus tokens will be added
   function addPoolsAndAllowBonus(
     address[] calldata _lpTokens,
     address[] calldata _bonusTokenAddrs,
     address[] calldata _authorizers
   ) external override onlyOwner notPaused {
-    for (uint256 i = 0; i < _bonusTokenAddrs.length; i++) {
-      allowedTokenAuthorizers[_bonusTokenAddrs[i]] = _authorizers;
-      bonusTokenAddrMap[_bonusTokenAddrs[i]] = 1;
-    }
-
+    // add pools
     for (uint256 i = 0; i < _lpTokens.length; i++) {
       Pool memory pool = pools[_lpTokens[i]];
       require(pool.lastUpdatedAt == 0, "BonusRewards: pool exists");
       pools[_lpTokens[i]].lastUpdatedAt = block.timestamp;
       poolList.push(_lpTokens[i]);
+    }
+
+    // add bonus tokens and their authorizers (who are allowed to add the token to pool)
+    for (uint256 i = 0; i < _bonusTokenAddrs.length; i++) {
+      allowedTokenAuthorizers[_bonusTokenAddrs[i]] = _authorizers;
+      bonusTokenAddrMap[_bonusTokenAddrs[i]] = 1;
     }
   }
 
@@ -240,8 +244,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     require(pools[_token].lastUpdatedAt == 0, "BonusRewards: lpToken, not allowed");
 
     uint256 balance = IERC20(_token).balanceOf(address(this));
-    // bonus token
     if (bonusTokenAddrMap[_token] == 1) {
+      // bonus token
       Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
       require(bonus.bonusTokenAddr == _token, "BonusRewards: wrong pool");
       require(bonus.endTime + WEEK < block.timestamp, "BonusRewards: not ready");
@@ -316,7 +320,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     }
   }
 
-  // only owner or authorized users can add bonus tokens
+  // only owner or authorized users from list
   function _isAuthorized(address _addr, address[] memory checkList) private view returns (bool) {
     if (_addr == owner()) return true;
 
