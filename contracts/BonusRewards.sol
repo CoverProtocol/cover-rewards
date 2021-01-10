@@ -53,6 +53,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
         uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
         uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
         uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
+        uint256 rewardsWriteoffs = user.rewardsWriteoffs.length == i ? 0 : user.rewardsWriteoffs[i];
         rewards[i] = user.amount * bonusPerToken / CAL_MULTIPLIER - user.rewardsWriteoffs[i];
       }
     }
@@ -143,8 +144,12 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     user.amount = user.amount - _amount;
     Bonus[] memory bonuses = pools[_lpToken].bonuses;
     for (uint256 i = 0; i < bonuses.length; i++) {
-      // update writeoff to match current acc rewards per token
-      user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
+      // update writeoff to match current acc rewards per tokenå
+      if (user.rewardsWriteoffs.length == i) {
+        user.rewardsWriteoffs.push(user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER);
+      } else {
+        user.rewardsWriteoffs[i] = user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER;
+      }
     }
 
     _safeTransfer(_lpToken, _amount);
