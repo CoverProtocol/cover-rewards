@@ -15,7 +15,7 @@ describe("BonusRewards", () => {
 
   let ownerAddress, ownerAccount, partnerAccount, partnerAddress, userAAccount, userAAddress, userBAccount, userBAddress;
 
-  let bonusRewards, lpToken, bonusToken, startTime;
+  let bonusRewards, lpToken, bonusToken, bonusToken2, startTime;
 
   before(async () => {
     const accounts = await ethers.getSigners();
@@ -47,6 +47,11 @@ describe("BonusRewards", () => {
     await bonusToken.deployed();
     bonusToken.mint(partnerAddress, ETHER_UINT_20000);
     await bonusToken.connect(partnerAccount).approve(bonusRewards.address, ETHER_UINT_20000);
+
+    bonusToken2 = await ERC20.deploy('COVER', 'COVER');
+    await bonusToken2.deployed();
+    bonusToken2.mint(partnerAddress, ETHER_UINT_20000);
+    await bonusToken2.connect(partnerAccount).approve(bonusRewards.address, ETHER_UINT_20000);
   });
 
   it("Should deploy correctly", async function() {
@@ -227,6 +232,25 @@ describe("BonusRewards", () => {
     const latest = await time.latest();
     const startTime = latest.toNumber() + 2;
     await expectRevert(bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS), "BonusRewards: last bonus not all claimed");
+  });
+
+  it("Should add 2nd Bonus and claim", async function() {
+    const latest = await time.latest();
+    const startTime = latest.toNumber() + 2;
+    await bonusRewards.addPoolsAndAllowBonus([], [bonusToken2.address], [partnerAddress]);
+    await bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken2.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS);
+
+    const timePassed = 24 * 60 * 60;
+    await time.increase(timePassed);
+    await time.advanceBlock();
+
+    await bonusRewards.connect(userAAccount).claimRewards(lpToken.address);
+    await bonusRewards.connect(userBAccount).claimRewards(lpToken.address);
+    const balA = await bonusToken2.balanceOf(userAAddress);
+    const balB = await bonusToken2.balanceOf(userBAddress);
+    expect(balA).to.equal(0);
+    expect(balB).to.gt(WEEKLY_REWARDS.mul(1).div(7));
+    expect(balB).to.lt(WEEKLY_REWARDS.mul(2).div(7));
   });
 
   it("Should addBonus if all bonusToken claimed", async function() {

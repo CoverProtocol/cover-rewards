@@ -53,8 +53,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
         uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
         uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
         uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
-        uint256 rewardsWriteoffs = user.rewardsWriteoffs.length == i ? 0 : user.rewardsWriteoffs[i];
-        rewards[i] = user.amount * bonusPerToken / CAL_MULTIPLIER - user.rewardsWriteoffs[i];
+        uint256 rewardsWriteoff = user.rewardsWriteoffs.length == i ? 0 : user.rewardsWriteoffs[i];
+        rewards[i] = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
       }
     }
     return rewards;
@@ -309,10 +309,12 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function _claimRewards(address _lpToken, User memory _user) private {
     // only claim if user has deposited before
-    if (_user.amount > 0 && _user.rewardsWriteoffs.length > 0) {
+    uint256 rewardsWriteoffsLen = _user.rewardsWriteoffs.length;
+    if (_user.amount > 0 && rewardsWriteoffsLen > 0) {
       Bonus[] memory bonuses = pools[_lpToken].bonuses;
       for (uint256 i = 0; i < bonuses.length; i++) {
-        uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - _user.rewardsWriteoffs[i];
+        uint256 rewardsWriteoff = rewardsWriteoffsLen == i ? 0 : _user.rewardsWriteoffs[i];
+        uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - rewardsWriteoff;
         if (bonusSinceLastUpdate > 0) {
           uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, bonusSinceLastUpdate); // transfer bonus tokens to user
           pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
