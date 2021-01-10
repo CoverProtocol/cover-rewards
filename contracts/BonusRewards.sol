@@ -241,7 +241,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
     uint256 balance = IERC20(_token).balanceOf(address(this));
     // bonus token
-    if (bonusTokenAddrMap[_token] == 1 && pools[_lpToken].bonuses.length > 0) {
+    if (bonusTokenAddrMap[_token] == 1) {
       Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
       require(bonus.bonusTokenAddr == _token, "BonusRewards: wrong pool");
       require(bonus.endTime + WEEK < block.timestamp, "BonusRewards: not ready");
