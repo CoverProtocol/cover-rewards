@@ -177,7 +177,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     }));
   }
 
-  /// @notice called by authorizers only, update startTime (if have not started) or update weeklyRewards
+  /// @notice called by authorizers only, update weeklyRewards (if not ended), or update startTime (only if rewards not started)
   function updateBonus(
     address _lpToken,
     address _bonusTokenAddr,
@@ -194,10 +194,10 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     for (uint256 i = 0; i < bonuses.length; i++) {
       Bonus storage bonus = pools[_lpToken].bonuses[i];
       if (bonuses[i].bonusTokenAddr == _bonusTokenAddr && bonus.endTime > block.timestamp) {
-        updatePool(_lpToken);
+        updatePool(_lpToken); // update pool with old weeklyReward to this block
         if (bonus.startTime > block.timestamp) {
-          // only honor new starttime, if program has not started
-          if (_startTime >= block.timestamp) {
+          // only honor new start time, if program has not started
+          if (_startTime > block.timestamp) {
             bonus.startTime = _startTime;
           }
           bonus.endTime = bonus.remBonus * WEEK / _weeklyRewards  + bonus.startTime;
