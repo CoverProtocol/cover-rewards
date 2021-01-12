@@ -80,20 +80,17 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
     uint256 poolLastUpdatedAt = pool.lastUpdatedAt;
     if (poolLastUpdatedAt == 0 || block.timestamp <= poolLastUpdatedAt) return;
+    pool.lastUpdatedAt = block.timestamp;
     uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
-    if (lpTotal == 0) {
-      pool.lastUpdatedAt = block.timestamp;
-      return;
-    }
+    if (lpTotal == 0) return;
 
     for (uint256 i = 0; i < pool.bonuses.length; i ++) {
       Bonus storage bonus = pool.bonuses[i];
-      if (pool.lastUpdatedAt < bonus.endTime && bonus.startTime < block.timestamp) {
-        uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
+      if (poolLastUpdatedAt < bonus.endTime && bonus.startTime < block.timestamp) {
+        uint256 bonusForTime = _calRewardsForTime(bonus, poolLastUpdatedAt);
         bonus.accRewardsPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
       }
     }
-    pool.lastUpdatedAt = block.timestamp;
   }
 
   function claimRewardsForPools(address[] calldata _lpTokens) external override nonReentrant {
@@ -118,6 +115,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   /// @notice withdraw up to all user deposited
   function withdraw(address _lpToken, uint256 _amount) external override nonReentrant notPaused {
+    require(pools[_lpToken].lastUpdatedAt > 0, "Blacksmith: pool does not exists");
     updatePool(_lpToken);
 
     User storage user = users[_lpToken][msg.sender];
