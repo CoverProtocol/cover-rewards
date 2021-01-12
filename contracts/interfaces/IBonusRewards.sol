@@ -36,8 +36,6 @@ interface IBonusRewards {
   function getAuthorizers(address _lpToken, address _bonusTokenAddr) external view returns (address[] memory);
   function viewRewards(address _lpToken, address _user) external view  returns (uint256[] memory);
 
-  function updatePool(address _lpToken) external;
-  function updatePools(uint256 _start, uint256 _end) external;
   function claimRewardsForPools(address[] calldata _lpTokens) external;
   function deposit(address _lpToken, uint256 _amount) external;
   function withdraw(address _lpToken, uint256 _amount) external;
