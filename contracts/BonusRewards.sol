@@ -93,7 +93,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     }
   }
 
-  function claimRewardsForPools(address[] calldata _lpTokens) external override nonReentrant {
+  function claimRewardsForPools(address[] calldata _lpTokens) external override nonReentrant notPaused {
     for (uint256 i = 0; i < _lpTokens.length; i++) {
       _claimRewardsForPool(_lpTokens[i]);
     }
@@ -144,7 +144,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256 _startTime,
     uint256 _weeklyRewards,
     uint256 _transferAmount
-  ) external override notPaused {
+  ) external override nonReentrant notPaused {
     require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(_startTime >= block.timestamp, "BonusRewards: startTime in the past");
 
@@ -165,7 +165,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     bonusTokenAddr.safeTransferFrom(msg.sender, address(this), _transferAmount);
     uint256 received = bonusTokenAddr.balanceOf(address(this)) - balanceBefore;
     // endTime is based on how much tokens transfered v.s. planned weekly rewards
-    uint256 endTime = (received / _weeklyRewards) * WEEK + _startTime;
+    uint256 endTime = received * WEEK / _weeklyRewards + _startTime;
 
     pools[_lpToken].bonuses.push(Bonus({
       bonusTokenAddr: _bonusTokenAddr,
@@ -177,13 +177,47 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     }));
   }
 
+  /// @notice called by authorizers only, update startTime (if have not started) or update weeklyRewards
+  function updateBonus(
+    address _lpToken,
+    address _bonusTokenAddr,
+    uint256 _weeklyRewards,
+    uint256 _startTime
+  ) external override nonReentrant notPaused {
+    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
+    require(_startTime == 0 || _startTime >= block.timestamp, "BonusRewards: startTime in the past");
+
+    // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
+    Pool memory pool = pools[_lpToken];
+    require(pool.lastUpdatedAt != 0, "BonusRewards: pool does not exist");
+    Bonus[] memory bonuses = pool.bonuses;
+    for (uint256 i = 0; i < bonuses.length; i++) {
+      Bonus storage bonus = pools[_lpToken].bonuses[i];
+      if (bonuses[i].bonusTokenAddr == _bonusTokenAddr && bonus.endTime > block.timestamp) {
+        uint256 endTime;
+        if (bonus.startTime > block.timestamp) {
+          // only honor new starttime, if program has not started
+          if (_startTime >= block.timestamp) {
+            bonus.startTime = _startTime;
+          }
+          endTime = bonus.remBonus * WEEK / _weeklyRewards  + bonus.startTime;
+        } else {
+          uint256 remBonusToDistribute = (bonus.endTime -  block.timestamp) * bonus.weeklyRewards / WEEK;
+          endTime = remBonusToDistribute * WEEK / _weeklyRewards + block.timestamp;
+        }
+        bonus.endTime = endTime;
+        bonus.weeklyRewards = _weeklyRewards;
+      }
+    }
+  }
+
   /// @notice extend the current bonus program, the program has to be active (endTime is in the future)
   function extendBonus(
     address _lpToken,
     uint256 _poolBonusId,
     address _bonusTokenAddr,
     uint256 _transferAmount
-  ) external override notPaused {
+  ) external override nonReentrant notPaused {
     require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
 
     Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
@@ -195,7 +229,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     bonusTokenAddr.safeTransferFrom(msg.sender, address(this), _transferAmount);
     uint256 received = bonusTokenAddr.balanceOf(address(this)) - balanceBefore;
     // endTime is based on how much tokens transfered v.s. planned weekly rewards
-    uint256 endTime = (received / bonus.weeklyRewards) * WEEK + bonus.endTime;
+    uint256 endTime = received * WEEK / bonus.weeklyRewards + bonus.endTime;
 
     pools[_lpToken].bonuses[_poolBonusId].endTime = endTime;
     pools[_lpToken].bonuses[_poolBonusId].remBonus = bonus.remBonus + received;

@@ -55,7 +55,12 @@ interface IBonusRewards {
     address _bonusTokenAddr,
     uint256 _transferAmount
   ) external;
-  // collect to owner
+  function updateBonus(
+    address _lpToken,
+    address _bonusTokenAddr,
+    uint256 _startTime,
+    uint256 _weeklyRewards
+  ) external;
 
   // only owner
   function setResponders(address[] calldata _responders) external;
