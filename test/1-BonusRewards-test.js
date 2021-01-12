@@ -163,7 +163,7 @@ describe("BonusRewards", () => {
     expect(userARewards.lt(WEEKLY_REWARDS)).to.be.true;
 
     // test claimRewards function for user A
-    await bonusRewards.connect(userAAccount).claimRewardsForPools([lpToken.address]);
+    await bonusRewards.connect(userAAccount).claimRewardsForPools([lpToken.address, lpToken.address]);
     const claimedRewardsA = await bonusToken.balanceOf(userAAddress);
     // console.log('claimedRewardsA: ', claimedRewardsA.toString());
     // console.log('rewardsEstimate: ', rewardsEstimate.toString());
