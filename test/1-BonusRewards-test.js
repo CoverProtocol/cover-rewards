@@ -260,7 +260,7 @@ describe("BonusRewards", () => {
     await time.increaseTo(daysAfter);
     await time.advanceBlock();
 
-    await bonusRewards.connect(userAAccount).claimRewardsForPools([lpToken.address]);
+    await bonusRewards.connect(userAAccount).claimRewardsForPools([bonusToken.address, lpToken.address]);
     await bonusRewards.connect(userBAccount).claimRewardsForPools([lpToken.address]);
     const balA = await bonusToken2.balanceOf(userAAddress);
     const balB = await bonusToken2.balanceOf(userBAddress);

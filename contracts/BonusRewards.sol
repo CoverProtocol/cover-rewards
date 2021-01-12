@@ -173,7 +173,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256 _startTime
   ) external override nonReentrant notPaused {
     require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
-    require(_startTime == 0 || _startTime >= block.timestamp, "BonusRewards: startTime in the past");
+    require(_startTime == 0 || _startTime > block.timestamp, "BonusRewards: startTime in the past");
 
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
     Pool memory pool = pools[_lpToken];
@@ -279,10 +279,9 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     paused = _paused;
   }
 
-  /// @notice update pool's bonus per staked token till current block timestamp
+  /// @notice update pool's bonus per staked token till current block timestamp, do nothing if pool does not exist
   function _updatePool(address _lpToken) private {
     Pool storage pool = pools[_lpToken];
-
     uint256 poolLastUpdatedAt = pool.lastUpdatedAt;
     if (poolLastUpdatedAt == 0 || block.timestamp <= poolLastUpdatedAt) return;
     pool.lastUpdatedAt = block.timestamp;
@@ -344,7 +343,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
         uint256 toTransfer = bonuses[i].remBonus < bonusSinceLastUpdate ? bonuses[i].remBonus : bonusSinceLastUpdate;
         if (toTransfer > 0) {
           uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, toTransfer);
-          // transfer bonus tokens to user, will revert if the pool does not have enough
           pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
         }
       }
