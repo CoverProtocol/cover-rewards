@@ -78,7 +78,12 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function claimRewardsForPools(address[] calldata _lpTokens) external override nonReentrant notPaused {
     for (uint256 i = 0; i < _lpTokens.length; i++) {
-      _claimRewardsForPool(_lpTokens[i]);
+      address _lpToken = _lpTokens[i];
+      User memory user = users[_lpToken][msg.sender];
+      if (user.amount == 0) continue;
+      _updatePool(_lpToken);
+      _claimRewards(_lpToken, user);
+      _updateUserWriteoffs(_lpToken);
     }
   }
 
@@ -342,15 +347,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
         }
       }
     }
-  }
-
-  function _claimRewardsForPool(address _lpToken) private {
-    User memory user = users[_lpToken][msg.sender];
-    if (user.amount == 0) return;
-
-    _updatePool(_lpToken);
-    _claimRewards(_lpToken, user);
-    _updateUserWriteoffs(_lpToken);
   }
 
   // only owner or authorized users from list
