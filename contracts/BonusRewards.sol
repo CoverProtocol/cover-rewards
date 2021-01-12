@@ -11,6 +11,7 @@ import "./interfaces/IBonusRewards.sol";
  * @title Cover Protocol Bonus Token Rewards contract
  * @author crypto-pumpkin
  * @notice ETH is not allowed to be an bonus token, use wETH instead
+ * @notice We support multiple bonus tokens for each pool. However, each pool will have 1 bonus token normally, may have 2 in rare cases
  */
 contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   using SafeERC20 for IERC20;
@@ -58,7 +59,8 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
         uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
         uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
         uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : user.rewardsWriteoffs[i];
-        rewards[i] = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
+        uint256 reward = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
+        rewards[i] = reward < bonus.remBonus ? reward : bonus.remBonus;
       }
     }
     return rewards;
