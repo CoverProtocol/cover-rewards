@@ -341,8 +341,10 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       for (uint256 i = 0; i < bonuses.length; i++) {
         uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : _user.rewardsWriteoffs[i];
         uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - rewardsWriteoff;
-        if (bonusSinceLastUpdate > 0) {
-          uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, bonusSinceLastUpdate); // transfer bonus tokens to user
+        uint256 toTransfer = bonuses[i].remBonus < bonusSinceLastUpdate ? bonuses[i].remBonus : bonusSinceLastUpdate;
+        if (toTransfer > 0) {
+          uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, toTransfer);
+          // transfer bonus tokens to user, will revert if the pool does not have enough
           pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
         }
       }
