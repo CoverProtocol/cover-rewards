@@ -248,11 +248,16 @@ describe("BonusRewards", () => {
     const latest = await time.latest();
     const startTime = latest.toNumber() + 2 * 60 * 60;
     await bonusRewards.addPoolsAndAllowBonus([lpToken.address], [bonusToken2.address], [partnerAddress]);
-    await bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken2.address, startTime, WEEKLY_REWARDS_DOUBLE, WEEKLY_REWARDS_DOUBLE);
-    await bonusRewards.connect(partnerAccount).updateBonus(lpToken.address, bonusToken2.address, WEEKLY_REWARDS, latest.toNumber() + 30);
+    await bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken2.address, startTime, 10, WEEKLY_REWARDS);
+    await bonusRewards.connect(partnerAccount).updateBonus(lpToken.address, bonusToken2.address, WEEKLY_REWARDS, startTime + 30);
 
-    const timePassed = 24 * 60 * 60 + 30;
-    await time.increase(timePassed);
+    const dayAfter = 24 * 60 * 60 + startTime;
+    await time.increaseTo(dayAfter);
+    await time.advanceBlock();
+    await bonusRewards.connect(partnerAccount).updateBonus(lpToken.address, bonusToken2.address, WEEKLY_REWARDS_DOUBLE, dayAfter + 30);
+
+    const daysAfter = dayAfter + 24 * 60 * 60 + 30;
+    await time.increaseTo(daysAfter);
     await time.advanceBlock();
 
     await bonusRewards.connect(userAAccount).claimRewardsForPools([lpToken.address]);
@@ -260,8 +265,8 @@ describe("BonusRewards", () => {
     const balA = await bonusToken2.balanceOf(userAAddress);
     const balB = await bonusToken2.balanceOf(userBAddress);
     expect(balA).to.equal(0);
-    expect(balB).to.gt(WEEKLY_REWARDS.mul(1).div(7));
-    expect(balB).to.lt(WEEKLY_REWARDS.mul(2).div(7));
+    expect(balB).to.gt(WEEKLY_REWARDS_DOUBLE.add(WEEKLY_REWARDS).mul(1).div(7));
+    expect(balB).to.lt(WEEKLY_REWARDS_DOUBLE.add(WEEKLY_REWARDS).mul(11).div(70));
   });
 
   it("Should addBonus if all bonusToken claimed", async function() {

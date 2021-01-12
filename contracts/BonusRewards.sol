@@ -194,18 +194,17 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     for (uint256 i = 0; i < bonuses.length; i++) {
       Bonus storage bonus = pools[_lpToken].bonuses[i];
       if (bonuses[i].bonusTokenAddr == _bonusTokenAddr && bonus.endTime > block.timestamp) {
-        uint256 endTime;
+        updatePool(_lpToken);
         if (bonus.startTime > block.timestamp) {
           // only honor new starttime, if program has not started
           if (_startTime >= block.timestamp) {
             bonus.startTime = _startTime;
           }
-          endTime = bonus.remBonus * WEEK / _weeklyRewards  + bonus.startTime;
+          bonus.endTime = bonus.remBonus * WEEK / _weeklyRewards  + bonus.startTime;
         } else {
           uint256 remBonusToDistribute = (bonus.endTime -  block.timestamp) * bonus.weeklyRewards / WEEK;
-          endTime = remBonusToDistribute * WEEK / _weeklyRewards + block.timestamp;
+          bonus.endTime = remBonusToDistribute * WEEK / _weeklyRewards + block.timestamp;
         }
-        bonus.endTime = endTime;
         bonus.weeklyRewards = _weeklyRewards;
       }
     }
