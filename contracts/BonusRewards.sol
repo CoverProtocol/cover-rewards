@@ -131,7 +131,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   function addBonus(
     address _lpToken,
     address _bonusTokenAddr,
-    uint256 _startTime,
+    uint48 _startTime,
     uint256 _weeklyRewards,
     uint256 _transferAmount
   ) external override nonReentrant notPaused {
@@ -155,7 +155,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     bonusTokenAddr.safeTransferFrom(msg.sender, address(this), _transferAmount);
     uint256 received = bonusTokenAddr.balanceOf(address(this)) - balanceBefore;
     // endTime is based on how much tokens transfered v.s. planned weekly rewards
-    uint256 endTime = received * WEEK / _weeklyRewards + _startTime;
+    uint48 endTime = uint48(received * WEEK / _weeklyRewards + _startTime);
 
     pools[_lpToken].bonuses.push(Bonus({
       bonusTokenAddr: _bonusTokenAddr,
@@ -172,7 +172,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     address _lpToken,
     address _bonusTokenAddr,
     uint256 _weeklyRewards,
-    uint256 _startTime
+    uint48 _startTime
   ) external override nonReentrant notPaused {
     require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(_startTime == 0 || _startTime > block.timestamp, "BonusRewards: startTime in the past");
@@ -190,10 +190,10 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
           if (_startTime > block.timestamp) {
             bonus.startTime = _startTime;
           }
-          bonus.endTime = bonus.remBonus * WEEK / _weeklyRewards  + bonus.startTime;
+          bonus.endTime = uint48(bonus.remBonus * WEEK / _weeklyRewards  + bonus.startTime);
         } else {
           uint256 remBonusToDistribute = (bonus.endTime -  block.timestamp) * bonus.weeklyRewards / WEEK;
-          bonus.endTime = remBonusToDistribute * WEEK / _weeklyRewards + block.timestamp;
+          bonus.endTime = uint48(remBonusToDistribute * WEEK / _weeklyRewards + block.timestamp);
         }
         bonus.weeklyRewards = _weeklyRewards;
       }
@@ -220,7 +220,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     // endTime is based on how much tokens transfered v.s. planned weekly rewards
     uint256 endTime = received * WEEK / bonus.weeklyRewards + bonus.endTime;
 
-    pools[_lpToken].bonuses[_poolBonusId].endTime = endTime;
+    pools[_lpToken].bonuses[_poolBonusId].endTime = uint48(endTime);
     pools[_lpToken].bonuses[_poolBonusId].remBonus = bonus.remBonus + received;
   }
 
@@ -231,11 +231,12 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     address[] calldata _authorizers
   ) external override onlyOwner notPaused {
     // add pools
+    uint48 lastUpdatedAt = uint48(block.timestamp);
     for (uint256 i = 0; i < _lpTokens.length; i++) {
       address _lpToken = _lpTokens[i];
       Pool memory pool = pools[_lpToken];
       if (pool.lastUpdatedAt == 0) {
-        pools[_lpToken].lastUpdatedAt = block.timestamp;
+        pools[_lpToken].lastUpdatedAt = lastUpdatedAt;
         poolList.push(_lpToken);
       }
 
@@ -286,7 +287,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     Pool storage pool = pools[_lpToken];
     uint256 poolLastUpdatedAt = pool.lastUpdatedAt;
     if (poolLastUpdatedAt == 0 || block.timestamp <= poolLastUpdatedAt) return;
-    pool.lastUpdatedAt = block.timestamp;
+    pool.lastUpdatedAt = uint48(block.timestamp);
     uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
     if (lpTotal == 0) return;
 

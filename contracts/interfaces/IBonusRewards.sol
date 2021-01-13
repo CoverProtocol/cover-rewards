@@ -12,8 +12,8 @@ interface IBonusRewards {
 
   struct Bonus {
     address bonusTokenAddr; // the external bonus token, like CRV
-    uint256 startTime;
-    uint256 endTime;
+    uint48 startTime;
+    uint48 endTime;
     uint256 weeklyRewards; // total amount to be distributed from start to end
     uint256 accRewardsPerToken; // accumulated bonus to the lastUpdated Time
     uint256 remBonus; // remaining bonus in contract
@@ -21,7 +21,7 @@ interface IBonusRewards {
 
   struct Pool {
     Bonus[] bonuses;
-    uint256 lastUpdatedAt; // last accumulated bonus update timestamp
+    uint48 lastUpdatedAt; // last accumulated bonus update timestamp
   }
 
   struct User {
@@ -43,7 +43,7 @@ interface IBonusRewards {
   function addBonus(
     address _lpToken,
     address _bonusTokenAddr,
-    uint256 _startTime,
+    uint48 _startTime,
     uint256 _weeklyRewards,
     uint256 _transferAmount
   ) external;
@@ -56,8 +56,8 @@ interface IBonusRewards {
   function updateBonus(
     address _lpToken,
     address _bonusTokenAddr,
-    uint256 _startTime,
-    uint256 _weeklyRewards
+    uint256 _weeklyRewards,
+    uint48 _startTime
   ) external;
 
   // only owner

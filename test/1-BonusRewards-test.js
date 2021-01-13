@@ -112,8 +112,8 @@ describe("BonusRewards", () => {
 
     const [[[bonusTokenAddr, start, end, weeklyRewards, accRewardsPerToken]],] = await bonusRewards.getPool(lpToken.address);
     expect(bonusTokenAddr).to.equal(bonusToken.address);
-    expect(start.toNumber()).to.equal(startTime);
-    expect(end.toNumber()).to.equal(endTime);
+    expect(start).to.equal(startTime);
+    expect(end).to.equal(endTime);
     expect(weeklyRewards.toString()).to.equal(weeklyRewards);
     expect(accRewardsPerToken.toNumber()).to.equal(0);
 
@@ -144,7 +144,7 @@ describe("BonusRewards", () => {
     await bonusRewards.connect(partnerAccount).extendBonus(lpToken.address, 0, bonusToken.address, WEEKLY_REWARDS);
 
     const [[[,, end,]]] = await bonusRewards.getPool(lpToken.address);
-    expect(end.sub(endBefore).toNumber()).to.equal(week);
+    expect(end - endBefore).to.equal(week);
   });
 
   it("Should view minedRewards, claimRewards for userA, deposit and claim for userB", async function() {
