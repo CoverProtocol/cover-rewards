@@ -1,13 +1,3 @@
-/**
- * Deploy:
- *    WETHDistributor
- *    COVER
- *    CoverDistributor
- *    
- * Calls after: 
- *    COVER.setDistributor
- */
-
 const configs = require('./configs');
 
 async function main() {
