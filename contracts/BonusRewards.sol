@@ -232,7 +232,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     address[] calldata _authorizers
   ) external override onlyOwner notPaused {
     // add pools
-    uint48 currentTime = uint48(block.timestamp);
+    uint256 currentTime = block.timestamp;
     for (uint256 i = 0; i < _lpTokens.length; i++) {
       address _lpToken = _lpTokens[i];
       Pool memory pool = pools[_lpToken];
@@ -288,7 +288,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     Pool storage pool = pools[_lpToken];
     uint256 poolLastUpdatedAt = pool.lastUpdatedAt;
     if (poolLastUpdatedAt == 0 || block.timestamp <= poolLastUpdatedAt) return;
-    pool.lastUpdatedAt = uint48(block.timestamp);
+    pool.lastUpdatedAt = block.timestamp;
     uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
     if (lpTotal == 0) return;
 
