@@ -240,10 +240,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     paused = _paused;
   }
 
-  function getPoolList() external view override returns (address[] memory) {
-    return poolList;
-  }
-
   function getPool(address _lpToken) external view override returns (Pool memory) {
     return pools[_lpToken];
   }
@@ -279,6 +275,11 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       }
     }
     return rewards;
+  }
+
+
+  function getPoolList() external view override returns (address[] memory) {
+    return poolList;
   }
 
   /// @notice update pool's bonus per staked token till current block timestamp, do nothing if pool does not exist
