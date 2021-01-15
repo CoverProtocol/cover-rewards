@@ -56,11 +56,15 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     _updatePool(_lpToken);
     User storage user = users[_lpToken][msg.sender];
     _claimRewards(_lpToken, user);
-    user.amount = user.amount + _amount;
-    _updateUserWriteoffs(_lpToken);
 
-    IERC20(_lpToken).safeTransferFrom(msg.sender, address(this), _amount);
-    emit Deposit(msg.sender, _lpToken, _amount);
+    IERC20 token = IERC20(_lpToken);
+    uint256 balanceBefore = token.balanceOf(address(this));
+    token.safeTransferFrom(msg.sender, address(this), _amount);
+    uint256 received = token.balanceOf(address(this)) - balanceBefore;
+
+    user.amount = user.amount + received;
+    _updateUserWriteoffs(_lpToken);
+    emit Deposit(msg.sender, _lpToken, received);
   }
 
   /// @notice withdraw up to all user deposited
