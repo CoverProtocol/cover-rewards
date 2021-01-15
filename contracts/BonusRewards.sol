@@ -83,12 +83,14 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   /// @notice withdraw all without rewards
-  function emergencyWithdraw(address _lpToken) external override nonReentrant {
-    User storage user = users[_lpToken][msg.sender];
-    uint256 amount = user.amount;
-    user.amount = 0;
-    _safeTransfer(_lpToken, amount);
-    emit Withdraw(msg.sender, _lpToken, amount);
+  function emergencyWithdraw(address[] calldata _lpTokens) external override nonReentrant {
+    for (uint256 i = 0; i < _lpTokens.length; i++) {
+      User storage user = users[_lpTokens[i]][msg.sender];
+      uint256 amount = user.amount;
+      user.amount = 0;
+      _safeTransfer(_lpTokens[i], amount);
+      emit Withdraw(msg.sender, _lpTokens[i], amount);
+    }
   }
 
   /// @notice called by authorizers only

@@ -224,7 +224,7 @@ describe("BonusRewards", () => {
     const [user] = await bonusRewards.getUser(lpTokenAddress, userAAddress);
 
     const userABalBefore = await lpToken.balanceOf(userAAddress);
-    await bonusRewards.connect(userAAccount).emergencyWithdraw(lpTokenAddress);
+    await bonusRewards.connect(userAAccount).emergencyWithdraw([lpTokenAddress]);
     const userABalAfter = await lpToken.balanceOf(userAAddress);
 
     expect(userABalAfter.sub(userABalBefore)).to.equal(user.amount);

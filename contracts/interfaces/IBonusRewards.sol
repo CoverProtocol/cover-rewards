@@ -39,7 +39,7 @@ interface IBonusRewards {
   function claimRewardsForPools(address[] calldata _lpTokens) external;
   function deposit(address _lpToken, uint256 _amount) external;
   function withdraw(address _lpToken, uint256 _amount) external;
-  function emergencyWithdraw(address _lpToken) external;
+  function emergencyWithdraw(address[] calldata _lpTokens) external;
   function addBonus(
     address _lpToken,
     address _bonusTokenAddr,
