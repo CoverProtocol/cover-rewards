@@ -16,7 +16,7 @@ describe("BonusRewards", () => {
 
   let ownerAddress, ownerAccount, partnerAccount, partnerAddress, userAAccount, userAAddress, userBAccount, userBAddress;
 
-  let bonusRewards, lpToken, bonusToken, bonusToken2, startTime;
+  let ERC20, bonusRewards, lpToken, bonusToken, bonusToken2, startTime;
 
   before(async () => {
     const accounts = await ethers.getSigners();
@@ -26,7 +26,7 @@ describe("BonusRewards", () => {
     userAAddress = await userAAccount.getAddress();
     userBAddress = await userBAccount.getAddress();
 
-    const ERC20 = await ethers.getContractFactory("ERC20");
+    ERC20 = await ethers.getContractFactory("ERC20");
     const BonusRewards = await ethers.getContractFactory("BonusRewards");
 
     // deploy rewawrds contract
@@ -281,5 +281,39 @@ describe("BonusRewards", () => {
     const latest = await time.latest();
     const startTime = latest.toNumber() + 2;
     await bonusRewards.connect(partnerAccount).addBonus(lpToken.address, bonusToken.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS);
+    const [[,, [,,, weeklyRewards,, remBonus]],] = await bonusRewards.getPool(lpToken.address);
+    expect(remBonus).to.equal(WEEKLY_REWARDS);
+    expect(weeklyRewards).to.equal(WEEKLY_REWARDS);
+  });
+
+  it("Should only collectDust on bonus tokens on eligible lpTokens", async function() {
+    const lpToken2 = await ERC20.deploy('BPT2', 'BPT2');
+    await lpToken2.deployed();
+    await bonusRewards.addPoolsAndAllowBonus([lpToken.address, lpToken2.address], [bonusToken.address], [partnerAddress]);
+    const latest = await time.latest();
+    const startTime = latest.toNumber() + 2;
+    await bonusRewards.connect(partnerAccount).addBonus(lpToken2.address, bonusToken.address, startTime, WEEKLY_REWARDS, WEEKLY_REWARDS_DOUBLE);
+    expect(await bonusToken.balanceOf(bonusRewards.address)).to.equal(WEEKLY_REWARDS_DOUBLE.add(WEEKLY_REWARDS));
+    const [[[,,, weeklyRewards,, remBonus]],] = await bonusRewards.getPool(lpToken2.address);
+    expect(remBonus).to.equal(WEEKLY_REWARDS_DOUBLE);
+    expect(weeklyRewards).to.equal(WEEKLY_REWARDS);
+
+    await time.increase(15 * 24 * 3600);
+    await time.advanceBlock();
+
+    const balBefore = await bonusToken.balanceOf(ownerAddress);
+    await bonusRewards.collectDust(bonusToken.address, lpToken.address, 2);
+    const balAfter = await bonusToken.balanceOf(ownerAddress);
+    expect(balAfter.sub(balBefore)).to.equal(WEEKLY_REWARDS);
+    expect(await bonusToken.balanceOf(bonusRewards.address)).to.equal(WEEKLY_REWARDS_DOUBLE);
+
+    await time.increase(15 * 24 * 3600);
+    await time.advanceBlock();
+
+    const balBefore2 = await bonusToken.balanceOf(ownerAddress);
+    await bonusRewards.collectDust(bonusToken.address, lpToken2.address, 0);
+    const balAfter2 = await bonusToken.balanceOf(ownerAddress);
+    expect(balAfter2.sub(balBefore2)).to.equal(WEEKLY_REWARDS_DOUBLE);
+    expect(await bonusToken.balanceOf(bonusRewards.address)).to.equal(0);
   });
 });
