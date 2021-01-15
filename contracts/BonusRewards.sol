@@ -246,9 +246,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
         address _bonusTokenAddr = _bonusTokenAddrs[j];
         require(pools[_bonusTokenAddr].lastUpdatedAt == 0, "BonusRewards: lpToken, not allowed");
         allowedTokenAuthorizers[_lpToken][_bonusTokenAddr] = _authorizers;
-        if (bonusTokenAddrMap[_bonusTokenAddr] == 0) {
-          bonusTokenAddrMap[_bonusTokenAddr] = 1;
-        }
+        bonusTokenAddrMap[_bonusTokenAddr] = 1;
       }
     }
   }
