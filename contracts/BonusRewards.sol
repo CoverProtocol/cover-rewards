@@ -239,6 +239,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     require(_isAuthorized(msg.sender, responders), "BonusRewards: caller not responder");
     paused = _paused;
   }
+
   function getPoolList() external view override returns (address[] memory) {
     return poolList;
   }
@@ -335,18 +336,16 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
 
   function _claimRewards(address _lpToken, User memory _user) private {
     // only claim if user has deposited before
-    if (_user.amount > 0) {
-      uint256 rewardsWriteoffsLen = _user.rewardsWriteoffs.length;
-      Bonus[] memory bonuses = pools[_lpToken].bonuses;
-      for (uint256 i = 0; i < bonuses.length; i++) {
-        uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : _user.rewardsWriteoffs[i];
-        uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - rewardsWriteoff;
-        uint256 toTransfer = bonuses[i].remBonus < bonusSinceLastUpdate ? bonuses[i].remBonus : bonusSinceLastUpdate;
-        if (toTransfer > 0) {
-          uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, toTransfer);
-          pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
-        }
-      }
+    if (_user.amount == 0) return;
+    uint256 rewardsWriteoffsLen = _user.rewardsWriteoffs.length;
+    Bonus[] memory bonuses = pools[_lpToken].bonuses;
+    for (uint256 i = 0; i < bonuses.length; i++) {
+      uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : _user.rewardsWriteoffs[i];
+      uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - rewardsWriteoff;
+      uint256 toTransfer = bonuses[i].remBonus < bonusSinceLastUpdate ? bonuses[i].remBonus : bonusSinceLastUpdate;
+      if (toTransfer == 0) return;
+      uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, toTransfer);
+      pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
     }
   }
 
