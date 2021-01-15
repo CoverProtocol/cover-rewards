@@ -38,47 +38,6 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     _;
   }
 
-  function getPoolList() external view override returns (address[] memory) {
-    return poolList;
-  }
-
-  function getPool(address _lpToken) external view override returns (Pool memory) {
-    return pools[_lpToken];
-  }
-
-  function viewRewards(address _lpToken, address _user) public view override returns (uint256[] memory) {
-    Pool memory pool = pools[_lpToken];
-    User memory user = users[_lpToken][_user];
-    uint256[] memory rewards = new uint256[](pool.bonuses.length);
-    if (user.amount <= 0) return rewards;
-
-    uint256 rewardsWriteoffsLen = user.rewardsWriteoffs.length;
-    for (uint256 i = 0; i < rewards.length; i ++) {
-      Bonus memory bonus = pool.bonuses[i];
-      if (bonus.startTime < block.timestamp && bonus.remBonus > 0) {
-        uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
-        uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
-        uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
-        uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : user.rewardsWriteoffs[i];
-        uint256 reward = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
-        rewards[i] = reward < bonus.remBonus ? reward : bonus.remBonus;
-      }
-    }
-    return rewards;
-  }
-
-  function getUser(address _lpToken, address _account) external view override returns (User memory, uint256[] memory) {
-    return (users[_lpToken][_account], viewRewards(_lpToken, _account));
-  }
-
-  function getAuthorizers(address _lpToken, address _bonusTokenAddr) external view override returns (address[] memory) {
-    return allowedTokenAuthorizers[_lpToken][_bonusTokenAddr];
-  }
-
-  function getResponders() external view override returns (address[] memory) {
-    return responders;
-  }
-
   function claimRewardsForPools(address[] calldata _lpTokens) external override nonReentrant notPaused {
     for (uint256 i = 0; i < _lpTokens.length; i++) {
       address lpToken = _lpTokens[i];
@@ -279,6 +238,46 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   function setPaused(bool _paused) external override {
     require(_isAuthorized(msg.sender, responders), "BonusRewards: caller not responder");
     paused = _paused;
+  }
+  function getPoolList() external view override returns (address[] memory) {
+    return poolList;
+  }
+
+  function getPool(address _lpToken) external view override returns (Pool memory) {
+    return pools[_lpToken];
+  }
+
+  function getUser(address _lpToken, address _account) external view override returns (User memory, uint256[] memory) {
+    return (users[_lpToken][_account], viewRewards(_lpToken, _account));
+  }
+
+  function getAuthorizers(address _lpToken, address _bonusTokenAddr) external view override returns (address[] memory) {
+    return allowedTokenAuthorizers[_lpToken][_bonusTokenAddr];
+  }
+
+  function getResponders() external view override returns (address[] memory) {
+    return responders;
+  }
+
+  function viewRewards(address _lpToken, address _user) public view override returns (uint256[] memory) {
+    Pool memory pool = pools[_lpToken];
+    User memory user = users[_lpToken][_user];
+    uint256[] memory rewards = new uint256[](pool.bonuses.length);
+    if (user.amount <= 0) return rewards;
+
+    uint256 rewardsWriteoffsLen = user.rewardsWriteoffs.length;
+    for (uint256 i = 0; i < rewards.length; i ++) {
+      Bonus memory bonus = pool.bonuses[i];
+      if (bonus.startTime < block.timestamp && bonus.remBonus > 0) {
+        uint256 lpTotal = IERC20(_lpToken).balanceOf(address(this));
+        uint256 bonusForTime = _calRewardsForTime(bonus, pool.lastUpdatedAt);
+        uint256 bonusPerToken = bonus.accRewardsPerToken + bonusForTime / lpTotal;
+        uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : user.rewardsWriteoffs[i];
+        uint256 reward = user.amount * bonusPerToken / CAL_MULTIPLIER - rewardsWriteoff;
+        rewards[i] = reward < bonus.remBonus ? reward : bonus.remBonus;
+      }
+    }
+    return rewards;
   }
 
   /// @notice update pool's bonus per staked token till current block timestamp, do nothing if pool does not exist
