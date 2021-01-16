@@ -34,7 +34,7 @@ describe("BonusRewards", () => {
     await bonusRewards.deployed();
 
     // deploy test lp token contract
-    lpToken = await ERC20.deploy('BPT', 'BPT');
+    lpToken = await ERC20.deploy('BPT', 'BPT', 18);
     await lpToken.deployed();
     lpToken.mint(ownerAddress, ETHER_UINT_100000000);
     lpToken.mint(userAAddress, ETHER_UINT_10000);
@@ -44,12 +44,12 @@ describe("BonusRewards", () => {
     await lpToken.connect(userBAccount).approve(bonusRewards.address, ETHER_UINT_20000);
 
     // deploy test bonus token contract
-    bonusToken = await ERC20.deploy('COVER', 'COVER');
+    bonusToken = await ERC20.deploy('COVER', 'COVER', 8);
     await bonusToken.deployed();
     bonusToken.mint(partnerAddress, ETHER_UINT_20000);
     await bonusToken.connect(partnerAccount).approve(bonusRewards.address, ETHER_UINT_20000);
 
-    bonusToken2 = await ERC20.deploy('COVER', 'COVER');
+    bonusToken2 = await ERC20.deploy('COVER', 'COVER', 8);
     await bonusToken2.deployed();
     bonusToken2.mint(partnerAddress, ETHER_UINT_20000);
     await bonusToken2.connect(partnerAccount).approve(bonusRewards.address, ETHER_UINT_20000);
@@ -287,7 +287,7 @@ describe("BonusRewards", () => {
   });
 
   it("Should only collectDust on bonus tokens on eligible lpTokens", async function() {
-    const lpToken2 = await ERC20.deploy('BPT2', 'BPT2');
+    const lpToken2 = await ERC20.deploy('BPT2', 'BPT2', 18);
     await lpToken2.deployed();
     await bonusRewards.addPoolsAndAllowBonus([lpToken.address, lpToken2.address], [bonusToken.address], [partnerAddress]);
     const latest = await time.latest();

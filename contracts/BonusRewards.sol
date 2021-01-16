@@ -19,7 +19,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   bool public paused;
   uint256 private constant WEEK = 7 days;
   // help calculate rewards/bonus PerToken only. 1e12 will allow meaningful $1 deposit in a $1bn pool  
-  uint256 private constant CAL_MULTIPLIER = 1e12;
+  uint256 private constant CAL_MULTIPLIER = 1e18;
   // use array to allow convinient replacement. Size of responders should be very small to 0 till a reputible responder multi-sig within DeFi or Yearn ecosystem is established
   address[] private responders;
   address[] private poolList;
