@@ -37,7 +37,7 @@ contract ERC20 is IERC20 {
   uint256 private _totalSupply;
 
   string public name;
-  uint8 public decimals;
+  uint8 public override decimals;
   string public symbol;
 
   constructor (string memory name_, string memory symbol_, uint8 decimals_) {
