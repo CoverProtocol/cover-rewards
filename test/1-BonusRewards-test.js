@@ -78,9 +78,11 @@ describe("BonusRewards", () => {
     await expectRevert(bonusRewards.connect(partnerAccount).addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "Ownable: caller is not the owner");
   });
 
-  it("Should NOT addPoolsAndAllowBonus by non-owner", async function() {
-    await expectRevert(bonusRewards.connect(partnerAccount).addPoolsAndAllowBonus([lpToken.address], [bonusToken.address], [partnerAddress]), "Ownable: caller is not the owner");
-  });
+  it("Should NOT allow lpToken has more than 18 decimals", async function() {
+    const lpToken20 = await ERC20.deploy('BPT', 'BPT', 20);
+    await lpToken20.deployed();
+    await expectRevert(bonusRewards.addPoolsAndAllowBonus([lpToken20.address], [bonusToken.address], [partnerAddress]), "BonusRewards: lptoken decimals > 18");
+  }); 
 
   it("Should addPoolsAndAllowBonus by owner under right condition", async function() {
     // cannot add when bonus is also lptoken
@@ -102,6 +104,10 @@ describe("BonusRewards", () => {
   it("Should NOT collectDust on lpToken", async function() {
     await expectRevert(bonusRewards.collectDust(lpToken.address, lpToken.address, 0), "BonusRewards: lpToken, not allowed");
   });
+
+  it("Should NOT allow on lpToken", async function() {
+    await expectRevert(bonusRewards.collectDust(lpToken.address, lpToken.address, 0), "BonusRewards: lpToken, not allowed");
+  }); 
 
   it("Should addBonus by partner correctly", async function() {
     const latest = await time.latest();
