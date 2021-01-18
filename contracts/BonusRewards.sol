@@ -101,7 +101,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256 _weeklyRewards,
     uint256 _transferAmount
   ) external override nonReentrant notPaused {
-    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
+    require(_isAuthorized(allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(_startTime >= block.timestamp, "BonusRewards: startTime in the past");
 
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
@@ -140,7 +140,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     uint256 _weeklyRewards,
     uint48 _startTime
   ) external override nonReentrant notPaused {
-    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
+    require(_isAuthorized(allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
     require(_startTime == 0 || _startTime > block.timestamp, "BonusRewards: startTime in the past");
 
     // make sure the pool is in the right state (exist with no active bonus at the moment) to add new bonus tokens
@@ -173,7 +173,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     address _bonusTokenAddr,
     uint256 _transferAmount
   ) external override nonReentrant notPaused {
-    require(_isAuthorized(msg.sender, allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
+    require(_isAuthorized(allowedTokenAuthorizers[_lpToken][_bonusTokenAddr]), "BonusRewards: not authorized caller");
 
     Bonus memory bonus = pools[_lpToken].bonuses[_poolBonusId];
     require(bonus.bonusTokenAddr == _bonusTokenAddr, "BonusRewards: bonus and id dont match");
@@ -243,7 +243,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
   }
 
   function setPaused(bool _paused) external override {
-    require(_isAuthorized(msg.sender, responders), "BonusRewards: caller not responder");
+    require(_isAuthorized(responders), "BonusRewards: caller not responder");
     paused = _paused;
   }
 
@@ -351,15 +351,15 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
       uint256 rewardsWriteoff = rewardsWriteoffsLen <= i ? 0 : _user.rewardsWriteoffs[i];
       uint256 bonusSinceLastUpdate = _user.amount * bonuses[i].accRewardsPerToken / CAL_MULTIPLIER - rewardsWriteoff;
       uint256 toTransfer = bonuses[i].remBonus < bonusSinceLastUpdate ? bonuses[i].remBonus : bonusSinceLastUpdate;
-      if (toTransfer == 0) return;
+      if (toTransfer == 0) continue;
       uint256 transferred = _safeTransfer(bonuses[i].bonusTokenAddr, toTransfer);
       pools[_lpToken].bonuses[i].remBonus = bonuses[i].remBonus - transferred;
     }
   }
 
   // only owner or authorized users from list
-  function _isAuthorized(address _addr, address[] memory checkList) private view returns (bool) {
-    if (_addr == owner()) return true;
+  function _isAuthorized(address[] memory checkList) private view returns (bool) {
+    if (msg.sender == owner()) return true;
 
     for (uint256 i = 0; i < checkList.length; i++) {
       if (msg.sender == checkList[i]) {
