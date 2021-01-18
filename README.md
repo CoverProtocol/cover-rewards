@@ -2,6 +2,9 @@
 
 Contracts for Cover Protocol bonus tokens rewards
 
+## Audits
+* [Official Audit 1](https://github.com/maxsam4/cover-protocol-rewards-audit-january-2021)
+
 ## Development
 * run `npm install` to install all node dependencies
 * run `npx hardhat compile` to compile
