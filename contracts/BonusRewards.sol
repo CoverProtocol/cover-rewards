@@ -201,8 +201,7 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
     for (uint256 i = 0; i < _lpTokens.length; i++) {
       address _lpToken = _lpTokens[i];
       require(IERC20(_lpToken).decimals() <= 18, "BonusRewards: lptoken decimals > 18");
-      Pool memory pool = pools[_lpToken];
-      if (pool.lastUpdatedAt == 0) {
+      if (pools[_lpToken].lastUpdatedAt == 0) {
         pools[_lpToken].lastUpdatedAt = currentTime;
         poolList.push(_lpToken);
       }
