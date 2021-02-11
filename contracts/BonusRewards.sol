@@ -158,8 +158,9 @@ contract BonusRewards is IBonusRewards, Ownable, ReentrancyGuard {
           }
           bonus.endTime = uint48(bonus.remBonus * WEEK / _weeklyRewards + bonus.startTime);
         } else {
-          uint256 remBonusToDistribute = (bonus.endTime - block.timestamp) * bonus.weeklyRewards / WEEK;
-          bonus.endTime = uint48(remBonusToDistribute * WEEK / _weeklyRewards + block.timestamp);
+          // remaining bonus to distribute * week
+          uint256 remBonusToDistribute = (bonus.endTime - block.timestamp) * bonus.weeklyRewards;
+          bonus.endTime = uint48(remBonusToDistribute / _weeklyRewards + block.timestamp);
         }
         bonus.weeklyRewards = _weeklyRewards;
       }
