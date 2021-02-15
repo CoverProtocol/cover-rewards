@@ -8,8 +8,8 @@ async function main() {
 
   const provider = deployer.provider;
   const network = await provider.getNetwork();
-  console.log(`Network: ${network.name} is koven ${network.name === 'kovan'}`);
-  const envVars = network.name === 'kovan' ? configs.kovan : configs.mainnet;
+  const envVars = configs[network.chainId];
+  console.log(`Network id ${network.chainId} is ${envVars.env}.`);
 
   const networkGasPrice = (await provider.getGasPrice()).toNumber();
   const gasPrice = networkGasPrice * 1.05;
