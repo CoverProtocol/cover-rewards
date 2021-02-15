@@ -46,6 +46,10 @@ module.exports = {
       gasLimit: 8000000,
       gasPrice: 31000000000,
     },
+    fantom: {
+      url: 'https://rpcapi.fantom.network',
+      accounts: process.env.MAINNET_DEV_PRIVATE_KEY ? [`0x${process.env.MAINNET_DEV_PRIVATE_KEY}`] : [],
+    },    
     mainnet: {
       url: process.env.MAINNET_INFURA_URL ? process.env.MAINNET_INFURA_URL : '',
       accounts: process.env.MAINNET_DEV_PRIVATE_KEY ? [`0x${process.env.MAINNET_DEV_PRIVATE_KEY}`] : [],
